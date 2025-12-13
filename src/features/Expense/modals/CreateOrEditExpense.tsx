@@ -48,7 +48,9 @@ export default function CreateOrEditExpenseDialog(
 
   const user = useQuery(api.users.viewer);
 
-  const expenseCategories = useQuery(api.expenses.getExpenseCategories);
+  const expenseCategoryOptions = useQuery(
+    api.expenses.getExpenseCategoryOptions
+  );
   const addExpense = useMutation(api.expenses.addExpense);
   const updateExpense = useMutation(api.expenses.updateExpense);
 
@@ -201,7 +203,9 @@ export default function CreateOrEditExpenseDialog(
                     type="datetime-local"
                     name="date"
                     placeholder="Enter date"
-                    defaultValue={expense?.date}
+                    defaultValue={
+                      expense?.date || new Date().toISOString().slice(0, 16)
+                    }
                     required
                   />
                   <Field.HelperText>
@@ -212,7 +216,7 @@ export default function CreateOrEditExpenseDialog(
               </Flex>
 
               <CategoryCombobox
-                initialItems={expenseCategories}
+                initialItems={expenseCategoryOptions}
                 selectedItem={expense?.category}
                 inputProps={{
                   name: "category",

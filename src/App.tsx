@@ -8,6 +8,7 @@ import { AuthLoading, Authenticated, Unauthenticated } from "convex/react";
 import SingIn from "./features/Auth/pages/SignIn";
 import { Center } from "@chakra-ui/react";
 import Logo from "./shared/components/Logo";
+import DashboardPage from "./features/Dashboard/pages/DashboardPage";
 
 export default function App() {
   return (
@@ -24,13 +25,11 @@ export default function App() {
           children={
             <React.Fragment>
               <Switch>
-                <Route path="/">Home Page</Route>
+                <Route path="/" component={DashboardPage} />
                 <Route path="/expenses" component={ExpensePage} />
                 <Route path="/about">About Page</Route>
                 <Route>
-                  <h2 style={{ padding: 20, textAlign: "center" }}>
-                    404 - Page Not Found
-                  </h2>
+                  <h2>404 - Page Not Found</h2>
                 </Route>
               </Switch>
             </React.Fragment>

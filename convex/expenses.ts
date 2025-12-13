@@ -36,7 +36,7 @@ export const getExpenses = query({
   },
 });
 
-export const getExpenseCategories = query({
+export const getExpenseCategoryOptions = query({
   handler: async (ctx) => {
     const categoriesSet = new Set<string>();
 
@@ -47,6 +47,42 @@ export const getExpenseCategories = query({
     return Array.from(categoriesSet).map((category) => ({
       value: category,
       label: category,
+    }));
+  },
+});
+
+export const getExpenseByCategoryValues = query({
+  args: {
+    userId: v.id("users"),
+    month: v.number(),
+    year: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const expenses = await ctx.db
+      .query("expenses")
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .filter((q) => {
+        const startDate = new Date(args.year, args.month - 1, 1);
+        const endDate = new Date(args.year, args.month, 0, 23, 59, 59, 999);
+        return q.and(
+          q.gte(q.field("date"), startDate.toISOString()),
+          q.lte(q.field("date"), endDate.toISOString())
+        );
+      })
+      .collect();
+
+    const categoryTotals: Record<string, number> = {};
+
+    expenses.forEach((expense) => {
+      if (!categoryTotals[expense.category]) {
+        categoryTotals[expense.category] = 0;
+      }
+      categoryTotals[expense.category] += expense.amount;
+    });
+
+    return Object.entries(categoryTotals).map(([category, total]) => ({
+      category,
+      total,
     }));
   },
 });
