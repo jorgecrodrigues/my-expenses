@@ -56,19 +56,26 @@ export const getExpenseCategoryOptions = query({
 export const getExpenseByCategoryValues = query({
   args: {
     userId: v.id("users"),
-    month: v.number(),
-    year: v.number(),
+    month: v.optional(v.number()),
+    year: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const expenses = await ctx.db
       .query("expenses")
       .filter((q) => q.eq(q.field("userId"), args.userId))
       .filter((q) => {
-        const startDate = new Date(args.year, args.month - 1, 1);
-        const endDate = new Date(args.year, args.month, 0, 23, 59, 59, 999);
+        if (!args.month || !args.year) {
+          return true;
+        }
         return q.and(
-          q.gte(q.field("date"), startDate.toISOString()),
-          q.lte(q.field("date"), endDate.toISOString())
+          q.gte(
+            q.field("date"),
+            new Date(args.year, args.month - 1, 1).toISOString()
+          ),
+          q.lte(
+            q.field("date"),
+            new Date(args.year, args.month, 0, 23, 59, 59, 999).toISOString()
+          )
         );
       })
       .collect();

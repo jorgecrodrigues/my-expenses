@@ -1,5 +1,5 @@
 import React from "react";
-import { HStack, Skeleton, Text, Input, Button } from "@chakra-ui/react";
+import { HStack, Skeleton, Text, Button, NativeSelect } from "@chakra-ui/react";
 import { BarSegment, useChart } from "@chakra-ui/charts";
 import { generateColorByString } from "@/shared/utils/color";
 import { useQuery } from "convex/react";
@@ -7,31 +7,26 @@ import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
 export default function CategoryBarSegment() {
-  const [date, setDate] = React.useState<Date>(new Date());
+  const today = new Date();
+  const [date, setDate] = React.useState<Date | undefined>();
 
   const handlePreviousMonth = () => {
-    const prevMonth = new Date(
-      date.getFullYear(),
-      date.getMonth() - 1,
-      date.getDate()
-    );
+    const d = date ? date : today;
+    const prevMonth = new Date(d.getFullYear(), d.getMonth() - 1, d.getDate());
     setDate(prevMonth);
   };
 
   const handleNextMonth = () => {
-    const nextMonth = new Date(
-      date.getFullYear(),
-      date.getMonth() + 1,
-      date.getDate()
-    );
+    const d = date ? date : today;
+    const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, d.getDate());
     setDate(nextMonth);
   };
 
   const user = useQuery(api.users.viewer);
   const data = useQuery(api.expenses.getExpenseByCategoryValues, {
     userId: user?._id as Id<"users">,
-    month: date.getMonth() + 1,
-    year: date.getFullYear(),
+    month: date ? date.getMonth() + 1 : undefined,
+    year: date ? date.getFullYear() : undefined,
   });
 
   const chart = useChart({
@@ -44,17 +39,73 @@ export default function CategoryBarSegment() {
     sort: { by: "name", direction: "asc" },
   });
 
+  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const month = parseInt(e.target.value, 10);
+    if (isNaN(month) || month < 0 || month > 11) {
+      setDate(undefined);
+      return;
+    }
+    const d = date ? date : today;
+    const newDate = new Date(d.getFullYear(), month, d.getDate());
+    setDate(newDate);
+  };
+
+  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const year = parseInt(e.target.value, 10);
+    if (isNaN(year)) {
+      setDate(undefined);
+      return;
+    }
+    const d = date ? date : today;
+    const newDate = new Date(year, d.getMonth(), d.getDate());
+    setDate(newDate);
+  };
+
   return (
     <>
       <HStack justify="flex-end">
         <HStack mb={4}>
-          <Input
-            mr={8}
-            variant="subtle"
-            type="date"
-            value={date.toISOString().slice(0, 10)}
-            onChange={(e) => setDate(new Date(e.target.value))}
-          />
+          <Button
+            variant="surface"
+            size="sm"
+            onClick={() => setDate(undefined)}
+          >
+            Todos os Meses
+          </Button>
+          <NativeSelect.Root>
+            <NativeSelect.Field
+              value={date ? date.getMonth() : -1}
+              onChange={handleMonthChange}
+            >
+              <option value={-1}>Todos os Meses</option>
+              {Array.from({ length: 12 }, (_, i) => i)
+                .reverse()
+                .map((month) => (
+                  <option key={month} value={month}>
+                    {new Date(0, month).toLocaleString("pt-BR", {
+                      month: "long",
+                    })}
+                  </option>
+                ))}
+            </NativeSelect.Field>
+            <NativeSelect.Indicator />
+          </NativeSelect.Root>
+          <NativeSelect.Root>
+            <NativeSelect.Field
+              value={date ? date.getFullYear() : -1}
+              onChange={handleYearChange}
+            >
+              <option value={-1}>Todos os Anos</option>
+              {Array.from({ length: 5 }, (_, i) => today.getFullYear() - i).map(
+                (year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                )
+              )}
+            </NativeSelect.Field>
+            <NativeSelect.Indicator />
+          </NativeSelect.Root>
           <Button variant="surface" size="sm" onClick={handlePreviousMonth}>
             Mês Anterior
           </Button>
@@ -94,7 +145,12 @@ export default function CategoryBarSegment() {
       <Skeleton w="fit-content" loading={!data}>
         <Text fontSize="sm" color="gray.500">
           Data for{" "}
-          {date.toLocaleString("default", { month: "long", year: "numeric" })}
+          {date
+            ? date.toLocaleDateString("pt-BR", {
+                month: "long",
+                year: "numeric",
+              })
+            : today.toLocaleDateString("pt-BR", { year: "numeric" })}
         </Text>
       </Skeleton>
     </>
