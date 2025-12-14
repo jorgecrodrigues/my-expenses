@@ -20,7 +20,7 @@ export default function Header() {
     <Flex px={2} py={2} borderBottomWidth={1} justify="flex-end" align="center">
       <Popover.Root>
         <Popover.Trigger asChild>
-          <Button variant="plain">
+          <Button variant="plain" pr={0}>
             <HStack>
               <Text fontSize="sm" fontWeight="medium">
                 {user?.name || "Guest"}

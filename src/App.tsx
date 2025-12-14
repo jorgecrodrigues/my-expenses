@@ -1,13 +1,16 @@
 import React from "react";
-import AppGrid from "./shared/components/AppGrid";
-import Header from "./shared/components/Header";
-import Sidebar from "./shared/components/Sidebar";
+import AppGrid from "@/shared/components/AppGrid";
+import Header from "@/shared/components/Header";
+import Sidebar from "@/shared/components/Sidebar";
 import { Route, Switch } from "wouter";
-import ExpensePage from "./features/Expense/pages/ExpensePage";
+import ExpensePage from "@/features/Expense/pages/ExpensePage";
 import { AuthLoading, Authenticated, Unauthenticated } from "convex/react";
-import SingIn from "./features/Auth/pages/SignIn";
+import SingIn from "@/features/Auth/pages/SignIn";
 import { Center } from "@chakra-ui/react";
-import Logo from "./shared/components/Logo";
+import Logo from "@/shared/components/Logo";
+import DashboardPage from "@/features/Dashboard/pages/DashboardPage";
+import AboutPage from "./features/About/pages/AboutPage";
+import HomePage from "./features/Home/pages/HomePage";
 
 export default function App() {
   return (
@@ -24,13 +27,16 @@ export default function App() {
           children={
             <React.Fragment>
               <Switch>
-                <Route path="/">Home Page</Route>
+                <Route path="/" component={HomePage} />
+                <Route path="/dashboard" component={DashboardPage} />
+                <Route
+                  path="/dashboard/month/:month/year/:year"
+                  component={DashboardPage}
+                />
                 <Route path="/expenses" component={ExpensePage} />
-                <Route path="/about">About Page</Route>
+                <Route path="/about" component={AboutPage} />
                 <Route>
-                  <h2 style={{ padding: 20, textAlign: "center" }}>
-                    404 - Page Not Found
-                  </h2>
+                  <h2>404 - Page Not Found</h2>
                 </Route>
               </Switch>
             </React.Fragment>

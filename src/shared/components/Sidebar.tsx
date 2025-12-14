@@ -26,6 +26,15 @@ export default function Sidebar() {
         as="a"
         variant="ghost"
         justifyContent="flex-start"
+        fontWeight={location === "/dashboard" ? "bold" : "normal"}
+        onClick={() => navigate("/dashboard")}
+      >
+        Dashboard
+      </Button>
+      <Button
+        as="a"
+        variant="ghost"
+        justifyContent="flex-start"
         fontWeight={location === "/expenses" ? "bold" : "normal"}
         onClick={() => navigate("/expenses")}
       >
