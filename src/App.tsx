@@ -1,14 +1,14 @@
 import React from "react";
-import AppGrid from "./shared/components/AppGrid";
-import Header from "./shared/components/Header";
-import Sidebar from "./shared/components/Sidebar";
+import AppGrid from "@/shared/components/AppGrid";
+import Header from "@/shared/components/Header";
+import Sidebar from "@/shared/components/Sidebar";
 import { Route, Switch } from "wouter";
-import ExpensePage from "./features/Expense/pages/ExpensePage";
+import ExpensePage from "@/features/Expense/pages/ExpensePage";
 import { AuthLoading, Authenticated, Unauthenticated } from "convex/react";
-import SingIn from "./features/Auth/pages/SignIn";
+import SingIn from "@/features/Auth/pages/SignIn";
 import { Center } from "@chakra-ui/react";
-import Logo from "./shared/components/Logo";
-import DashboardPage from "./features/Dashboard/pages/DashboardPage";
+import Logo from "@/shared/components/Logo";
+import DashboardPage from "@/features/Dashboard/pages/DashboardPage";
 
 export default function App() {
   return (

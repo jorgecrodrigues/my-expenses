@@ -28,7 +28,6 @@ export default defineSchema({
     name: v.string(),
     description: v.optional(v.string()),
     amount: v.number(),
-    type: v.optional(v.string()),
     category: v.string(),
     date: v.string(),
     repeat: v.union(

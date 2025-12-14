@@ -6,7 +6,6 @@ const commonExpenseArgs = {
   name: v.string(),
   description: v.optional(v.string()),
   amount: v.number(),
-  type: v.optional(v.string()),
   category: v.string(),
   date: v.string(),
   repeat: v.union(
@@ -97,7 +96,6 @@ export const addExpense = mutation({
       name: args.name,
       description: args.description,
       amount: args.amount,
-      type: args.type,
       category: args.category,
       repeat: args.repeat,
       date: args.date,
@@ -117,7 +115,6 @@ export const updateExpense = mutation({
       name: args.name,
       description: args.description,
       amount: args.amount,
-      type: args.type,
       category: args.category,
       repeat: args.repeat,
       date: args.date,
