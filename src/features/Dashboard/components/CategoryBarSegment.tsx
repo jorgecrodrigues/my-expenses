@@ -1,5 +1,14 @@
 import React from "react";
-import { HStack, Skeleton, Text, Button, NativeSelect } from "@chakra-ui/react";
+import {
+  HStack,
+  Skeleton,
+  Text,
+  Button,
+  NativeSelect,
+  Wrap,
+  RadioCard,
+  Span,
+} from "@chakra-ui/react";
 import { BarSegment, useChart } from "@chakra-ui/charts";
 import { generateColorByString } from "@/shared/utils/color";
 import { useQuery } from "convex/react";
@@ -172,6 +181,41 @@ export default function CategoryBarSegment() {
             : today.toLocaleDateString("en-US", { year: "numeric" })}
         </Text>
       </Skeleton>
+
+      <RadioCard.Root
+        size="sm"
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+          setLocation(
+            `/dashboard/month/${params.month || today.getMonth() + 1}/year/${params.year || today.getFullYear()}/category/${event.target.value}`
+          );
+        }}
+      >
+        <RadioCard.Label>
+          Select to show details for a specific category:
+        </RadioCard.Label>
+        <Wrap justify="flex-start" align="flex-start">
+          {data?.map((item) => (
+            <Skeleton key={item.category} loading={!data}>
+              <RadioCard.Item value={item.category} cursor="pointer">
+                <RadioCard.ItemHiddenInput />
+                <RadioCard.ItemControl>
+                  <RadioCard.ItemContent>
+                    <RadioCard.ItemText fontWeight="bold" whiteSpace="nowrap">
+                      {item.category} <Span>»</Span>{" "}
+                    </RadioCard.ItemText>
+                    <RadioCard.ItemDescription>
+                      {item.total.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })}
+                    </RadioCard.ItemDescription>
+                  </RadioCard.ItemContent>
+                </RadioCard.ItemControl>
+              </RadioCard.Item>
+            </Skeleton>
+          ))}
+        </Wrap>
+      </RadioCard.Root>
     </>
   );
 }

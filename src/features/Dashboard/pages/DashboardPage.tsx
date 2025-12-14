@@ -1,5 +1,6 @@
-import { HStack } from "@chakra-ui/react";
+import { HStack, VStack } from "@chakra-ui/react";
 import CategoryBarSegment from "../components/CategoryBarSegment";
+import CategoryDetail from "../components/CategoryDetail";
 
 export default function DashboardPage() {
   return (
@@ -10,7 +11,10 @@ export default function DashboardPage() {
           <p>Welcome to the Dashboard!</p>
         </div>
       </HStack>
-      <CategoryBarSegment />
+      <VStack spaceY={4} align="stretch">
+        <CategoryBarSegment />
+        <CategoryDetail />
+      </VStack>
     </>
   );
 }

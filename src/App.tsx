@@ -33,6 +33,10 @@ export default function App() {
                   path="/dashboard/month/:month/year/:year"
                   component={DashboardPage}
                 />
+                <Route
+                  path="/dashboard/month/:month/year/:year/category/:category"
+                  component={DashboardPage}
+                />
                 <Route path="/expenses" component={ExpensePage} />
                 <Route path="/about" component={AboutPage} />
                 <Route>

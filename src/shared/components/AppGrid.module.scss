@@ -36,6 +36,8 @@
 .content {
     padding: 1rem;
     grid-area: content;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .footer {

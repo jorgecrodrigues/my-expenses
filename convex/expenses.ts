@@ -22,6 +22,15 @@ const commonExpenseArgs = {
   repeatEndDate: v.optional(v.string()),
 };
 
+/**
+ * Gets expenses for a specific user with optional ordering and pagination.
+ *
+ * @param userId - The ID of the user.
+ * @param orderBy - Optional ordering criteria ("by_amount" or "by_date").
+ * @param order - Optional order direction ("asc" or "desc").
+ * @param paginationOpts - Optional pagination options.
+ * @returns A paginated list of expenses for the user.
+ */
 export const getExpenses = query({
   args: {
     userId: v.id("users"),
@@ -35,6 +44,39 @@ export const getExpenses = query({
       .filter((q) => q.eq(q.field("userId"), args.userId))
       .order(args.order || "asc")
       .paginate(args.paginationOpts);
+  },
+});
+
+/**
+ * Gets expenses for a specific user and category.
+ *
+ * @param userId - The ID of the user.
+ * @param category - The category of expenses to retrieve.
+ * @returns A list of expenses matching the user ID and category.
+ */
+export const getExpenseByCategory = query({
+  args: {
+    userId: v.id("users"),
+    category: v.string(),
+    year: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("expenses")
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .filter((q) => q.eq(q.field("category"), args.category))
+      .filter((q) => {
+        if (!args.year) return true;
+
+        return q.and(
+          q.gte(q.field("date"), new Date(args.year, 0, 1).toISOString()),
+          q.lte(
+            q.field("date"),
+            new Date(args.year, 11, 31, 23, 59, 59, 999).toISOString()
+          )
+        );
+      })
+      .collect();
   },
 });
 
@@ -64,9 +106,8 @@ export const getExpenseByCategoryValues = query({
       .query("expenses")
       .filter((q) => q.eq(q.field("userId"), args.userId))
       .filter((q) => {
-        if (!args.month || !args.year) {
-          return true;
-        }
+        if (!args.month || !args.year) return true;
+
         return q.and(
           q.gte(
             q.field("date"),
@@ -88,6 +129,8 @@ export const getExpenseByCategoryValues = query({
       }
       categoryTotals[expense.category] += expense.amount;
     });
+
+    // Placeholder data
 
     return Object.entries(categoryTotals).map(([category, total]) => ({
       category,
