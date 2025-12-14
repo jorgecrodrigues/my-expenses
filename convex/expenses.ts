@@ -1,5 +1,8 @@
-import { mutation, query } from "./_generated/server";
+import { faker } from "@faker-js/faker";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
+import { paginationOptsValidator } from "convex/server";
 
 const commonExpenseArgs = {
   userId: v.id("users"),
@@ -24,14 +27,14 @@ export const getExpenses = query({
     userId: v.id("users"),
     orderBy: v.optional(v.union(v.literal("by_amount"), v.literal("by_date"))),
     order: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
+    paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("expenses")
-      .withIndex(args.orderBy || "by_date")
-      .order(args.order || "desc")
       .filter((q) => q.eq(q.field("userId"), args.userId))
-      .collect();
+      .order(args.order || "asc")
+      .paginate(args.paginationOpts);
   },
 });
 
@@ -129,4 +132,64 @@ export const deleteExpense = mutation({
   handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
   },
+});
+
+// For development/testing purposes only ...
+
+// Deletes all expenses in the database.
+export const deleteAllExpenses = internalMutation(async (ctx) => {
+  console.log("Deleting all expenses...");
+  console.time("Deleting all expenses");
+  const allExpenses = await ctx.db.query("expenses").collect();
+  for (const expense of allExpenses) {
+    await ctx.db.delete(expense._id);
+    console.log(`Deleted expense with ID: ${expense._id}`);
+  }
+  console.timeEnd("Deleting all expenses");
+  console.log("All expenses deleted.");
+});
+
+// Creates 200 fake expenses for a specific user.
+export const createFakeExpense = internalMutation(async (ctx) => {
+  console.log("Creating fake expenses...");
+
+  // Initialize Faker with a random value.
+  faker.seed();
+
+  // Create a user
+  console.log("Fetching user...");
+  console.time("Fetching user");
+  const user = await ctx.db
+    .query("users")
+    .filter((q) => q.eq(q.field("email"), "jorgerodrigues9@outlook.com"))
+    .first();
+  console.timeEnd("Fetching user");
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  console.time("Creating fake expenses");
+  for (let i = 0; i < 200; i++) {
+    const expenseId = await ctx.db.insert("expenses", {
+      userId: user?._id as Id<"users">,
+      name: faker.commerce.productName(),
+      description: faker.lorem.sentence(),
+      amount: parseFloat(faker.commerce.price({ min: 5, max: 10000 })),
+      category: faker.commerce.department(),
+      date: faker.date
+        .between({
+          from: new Date(new Date().getFullYear(), 0, 1),
+          to: new Date(new Date().getFullYear(), 11, 31),
+        })
+        .toISOString(),
+      repeat: Array.from(["none", "daily", "weekly", "monthly", "yearly"])[
+        Math.floor(Math.random() * 5)
+      ] as "none" | "daily" | "weekly" | "monthly" | "yearly",
+      repeatStartDate: undefined,
+      repeatEndDate: undefined,
+    });
+    console.log(`Created expense with ID: ${expenseId}`);
+  }
+  console.timeEnd("Creating fake expenses");
 });

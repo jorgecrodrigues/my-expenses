@@ -1,21 +1,23 @@
 "use client";
 
 import React from "react";
-import { useQuery } from "convex/react";
+import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { Badge, Flex, Skeleton, Table } from "@chakra-ui/react";
+import { Badge, Button, Flex, Skeleton, Table } from "@chakra-ui/react";
 import CreateOrEditExpenseDialog from "../modals/CreateOrEditExpense";
 import RemoveExpenseDialog from "../modals/RemoveExpense";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
 export default function ExpensesList() {
+  const [perPage] = React.useState<number>(15);
+
   const user = useQuery(api.users.viewer);
 
-  const data = useQuery(api.expenses.getExpenses, {
-    userId: user?._id as Id<"users">,
-    orderBy: "by_date",
-    order: "desc",
-  });
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.expenses.getExpenses,
+    { userId: user?._id as Id<"users">, orderBy: "by_date", order: "desc" },
+    { initialNumItems: perPage }
+  );
 
   return (
     <React.Fragment>
@@ -29,7 +31,6 @@ export default function ExpensesList() {
             <Table.ColumnHeader>Name</Table.ColumnHeader>
             <Table.ColumnHeader>Description</Table.ColumnHeader>
             <Table.ColumnHeader>Amount</Table.ColumnHeader>
-            <Table.ColumnHeader>Type</Table.ColumnHeader>
             <Table.ColumnHeader>Category</Table.ColumnHeader>
             <Table.ColumnHeader>Date (Due date)</Table.ColumnHeader>
             <Table.ColumnHeader>Repeat</Table.ColumnHeader>
@@ -38,7 +39,7 @@ export default function ExpensesList() {
           </Table.Row>
         </Table.Header>
         <Table.Body>
-          {data?.map?.((expense) => (
+          {results?.map?.((expense) => (
             <Table.Row key={expense._id}>
               <Table.Cell>{expense?.name ?? "-"}</Table.Cell>
               <Table.Cell>{expense?.description ?? "-"}</Table.Cell>
@@ -50,7 +51,6 @@ export default function ExpensesList() {
                     })
                   : "-"}
               </Table.Cell>
-              <Table.Cell>{expense?.type ?? "-"}</Table.Cell>
               <Table.Cell>{expense?.category ?? "-"}</Table.Cell>
               <Table.Cell>
                 {expense?.date
@@ -84,7 +84,9 @@ export default function ExpensesList() {
                 </Flex>
               </Table.Cell>
             </Table.Row>
-          )) ?? (
+          ))}
+
+          {status === "LoadingFirstPage" ? (
             <>
               {Array.from({ length: 50 }).map((_, index) => (
                 <Table.Row key={index}>
@@ -96,9 +98,39 @@ export default function ExpensesList() {
                 </Table.Row>
               ))}
             </>
-          )}
+          ) : null}
 
-          {data && data.length === 0 ? (
+          {status === "CanLoadMore" ? (
+            <Table.Row>
+              <Table.Cell colSpan={9}>
+                <Button variant="surface" onClick={() => loadMore(perPage)}>
+                  Load More
+                </Button>
+              </Table.Cell>
+            </Table.Row>
+          ) : null}
+
+          {status === "LoadingMore" ? (
+            <Table.Row>
+              {Array.from({ length: 10 }).map((_, cellIndex) => (
+                <Table.Cell key={cellIndex}>
+                  <Skeleton variant="shine" height="20px" />
+                </Table.Cell>
+              ))}
+            </Table.Row>
+          ) : null}
+
+          {status === "Exhausted" ? (
+            <Table.Row>
+              <Table.Cell colSpan={9}>
+                <Badge variant="outline" size="md">
+                  No more expenses to load.
+                </Badge>
+              </Table.Cell>
+            </Table.Row>
+          ) : null}
+
+          {results && results.length === 0 ? (
             <Table.Row>
               <Table.Cell colSpan={9}>
                 No expenses found. Please add a new expense.
