@@ -72,6 +72,22 @@ export default function CategoryDetail() {
 
   return (
     <>
+      <VStack>
+        <Text fontSize="lg" fontWeight="bold">
+          Show details for category: {params.category || "None"}
+        </Text>
+        <Text fontSize="sm">
+          Breakdown of expenses by month for the year{" "}
+          {date ? date.getFullYear() : ""}:
+        </Text>
+        <Text mb={4}>
+          Total Expenses:{" "}
+          {chart.getTotal("amount").toLocaleString("en-US", {
+            style: "currency",
+            currency: "BRL",
+          })}
+        </Text>
+      </VStack>
       <VStack justify="center" align="center">
         <Chart.Root maxH="xs" chart={chart}>
           <BarChart data={chart.data}>
@@ -79,13 +95,21 @@ export default function CategoryDetail() {
               stroke={chart.color("border.muted")}
               vertical={false}
             />
-            <XAxis dataKey={chart.key("month")} />
+            <XAxis
+              axisLine={false}
+              tickLine={false}
+              dataKey={chart.key("month")}
+              stroke={chart.color("border")}
+            />
             <YAxis
+              axisLine={false}
+              tickLine={false}
               tickFormatter={chart.formatNumber({
                 style: "currency",
                 currency: "BRL",
                 notation: "compact",
               })}
+              stroke={chart.color("border")}
             />
             <Tooltip
               cursor={{ fill: chart.color("background.muted") }}
