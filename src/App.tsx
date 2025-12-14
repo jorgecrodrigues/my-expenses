@@ -10,6 +10,7 @@ import { Center } from "@chakra-ui/react";
 import Logo from "@/shared/components/Logo";
 import DashboardPage from "@/features/Dashboard/pages/DashboardPage";
 import AboutPage from "./features/About/pages/AboutPage";
+import HomePage from "./features/Home/pages/HomePage";
 
 export default function App() {
   return (
@@ -26,7 +27,12 @@ export default function App() {
           children={
             <React.Fragment>
               <Switch>
-                <Route path="/" component={DashboardPage} />
+                <Route path="/" component={HomePage} />
+                <Route path="/dashboard" component={DashboardPage} />
+                <Route
+                  path="/dashboard/month/:month/year/:year"
+                  component={DashboardPage}
+                />
                 <Route path="/expenses" component={ExpensePage} />
                 <Route path="/about" component={AboutPage} />
                 <Route>

@@ -5,21 +5,37 @@ import { generateColorByString } from "@/shared/utils/color";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
+import { useLocation, useParams } from "wouter";
 
 export default function CategoryBarSegment() {
+  const params = useParams<{ month?: string; year?: string }>();
+
   const today = new Date();
-  const [date, setDate] = React.useState<Date | undefined>();
+  const date = React.useMemo(() => {
+    const month = params.month ? parseInt(params.month, 10) - 1 : undefined;
+    const year = params.year ? parseInt(params.year, 10) : undefined;
+    if (month === undefined || year === undefined) {
+      return undefined;
+    }
+    return new Date(year, month, 1);
+  }, [params.month, params.year]);
+
+  const [, setLocation] = useLocation();
 
   const handlePreviousMonth = () => {
     const d = date ? date : today;
     const prevMonth = new Date(d.getFullYear(), d.getMonth() - 1, d.getDate());
-    setDate(prevMonth);
+    setLocation(
+      `/dashboard/month/${prevMonth.getMonth() + 1}/year/${prevMonth.getFullYear()}`
+    );
   };
 
   const handleNextMonth = () => {
     const d = date ? date : today;
     const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, d.getDate());
-    setDate(nextMonth);
+    setLocation(
+      `/dashboard/month/${nextMonth.getMonth() + 1}/year/${nextMonth.getFullYear()}`
+    );
   };
 
   const user = useQuery(api.users.viewer);
@@ -41,23 +57,27 @@ export default function CategoryBarSegment() {
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const month = parseInt(e.target.value, 10);
     if (isNaN(month) || month < 0 || month > 11) {
-      setDate(undefined);
+      setLocation("/dashboard");
       return;
     }
     const d = date ? date : today;
     const newDate = new Date(d.getFullYear(), month, d.getDate());
-    setDate(newDate);
+    setLocation(
+      `/dashboard/month/${newDate.getMonth() + 1}/year/${newDate.getFullYear()}`
+    );
   };
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const year = parseInt(e.target.value, 10);
     if (isNaN(year)) {
-      setDate(undefined);
+      setLocation("/dashboard");
       return;
     }
     const d = date ? date : today;
     const newDate = new Date(year, d.getMonth(), d.getDate());
-    setDate(newDate);
+    setLocation(
+      `/dashboard/month/${newDate.getMonth() + 1}/year/${newDate.getFullYear()}`
+    );
   };
 
   return (
@@ -67,7 +87,7 @@ export default function CategoryBarSegment() {
           <Button
             variant="surface"
             size="sm"
-            onClick={() => setDate(undefined)}
+            onClick={() => setLocation("/dashboard")}
           >
             Todos os Meses
           </Button>
