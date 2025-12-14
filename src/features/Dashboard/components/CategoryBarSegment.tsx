@@ -36,7 +36,6 @@ export default function CategoryBarSegment() {
         value: item.total,
         color: generateColorByString(item.category),
       })) || [],
-    sort: { by: "name", direction: "asc" },
   });
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -146,11 +145,11 @@ export default function CategoryBarSegment() {
         <Text fontSize="sm" color="gray.500">
           Data for{" "}
           {date
-            ? date.toLocaleDateString("pt-BR", {
+            ? date.toLocaleDateString("en-US", {
                 month: "long",
                 year: "numeric",
               })
-            : today.toLocaleDateString("pt-BR", { year: "numeric" })}
+            : today.toLocaleDateString("en-US", { year: "numeric" })}
         </Text>
       </Skeleton>
     </>

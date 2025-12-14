@@ -9,6 +9,7 @@ import SingIn from "@/features/Auth/pages/SignIn";
 import { Center } from "@chakra-ui/react";
 import Logo from "@/shared/components/Logo";
 import DashboardPage from "@/features/Dashboard/pages/DashboardPage";
+import AboutPage from "./features/About/pages/AboutPage";
 
 export default function App() {
   return (
@@ -27,7 +28,7 @@ export default function App() {
               <Switch>
                 <Route path="/" component={DashboardPage} />
                 <Route path="/expenses" component={ExpensePage} />
-                <Route path="/about">About Page</Route>
+                <Route path="/about" component={AboutPage} />
                 <Route>
                   <h2>404 - Page Not Found</h2>
                 </Route>
