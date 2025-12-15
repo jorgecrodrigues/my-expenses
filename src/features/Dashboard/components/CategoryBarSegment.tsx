@@ -83,7 +83,7 @@ export default function CategoryBarSegment() {
   return (
     <>
       <HStack justify="flex-end">
-        <HStack mb={4}>
+        <HStack mb={2}>
           <Button
             variant="surface"
             size="sm"
@@ -152,7 +152,21 @@ export default function CategoryBarSegment() {
         <BarSegment.Root mb={2} chart={chart}>
           <BarSegment.Content>
             <BarSegment.Value />
-            <BarSegment.Bar tooltip />
+            <BarSegment.Bar
+              tooltip={({ payload }: BarSegment.TooltipProps) => (
+                <Button
+                  w="100%"
+                  h="100%"
+                  bg="transparent"
+                  rounded={0}
+                  onClick={() => {
+                    setLocation(
+                      `/dashboard/month/${params.month || today.getMonth() + 1}/year/${params.year || today.getFullYear()}/category/${payload.name}`
+                    );
+                  }}
+                />
+              )}
+            />
             <BarSegment.Label textStyle="xs" />
             {data && data.length === 0 && (
               <Text>No expenses found for this month.</Text>
