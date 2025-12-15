@@ -33,7 +33,6 @@ export default function ExpensesList() {
             <Table.ColumnHeader>Amount</Table.ColumnHeader>
             <Table.ColumnHeader>Category</Table.ColumnHeader>
             <Table.ColumnHeader>Date (Due date)</Table.ColumnHeader>
-            <Table.ColumnHeader>Repeat</Table.ColumnHeader>
             <Table.ColumnHeader>Created At</Table.ColumnHeader>
             <Table.ColumnHeader>Actions</Table.ColumnHeader>
           </Table.Row>
@@ -59,15 +58,6 @@ export default function ExpensesList() {
                       timeStyle: "short",
                     })
                   : "-"}
-              </Table.Cell>
-              <Table.Cell>
-                {expense?.repeat !== "none" ? (
-                  <Badge variant="surface" size="md">
-                    {expense.repeat}
-                  </Badge>
-                ) : (
-                  "-"
-                )}
               </Table.Cell>
               <Table.Cell>
                 {expense?._creationTime

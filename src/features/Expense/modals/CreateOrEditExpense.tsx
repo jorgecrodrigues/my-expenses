@@ -7,10 +7,8 @@ import {
   Dialog,
   Field,
   Flex,
-  HStack,
   Input,
   Portal,
-  RadioCard,
 } from "@chakra-ui/react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
@@ -25,19 +23,19 @@ interface CreateOrEditExpenseProps {
   expense?: Expense;
 }
 
-type RepeatOption = {
-  value: "none" | "daily" | "weekly" | "monthly" | "yearly";
-  title: string;
-  description: string;
-};
+// type RepeatOption = {
+//   value: "none" | "daily" | "weekly" | "monthly" | "yearly";
+//   title: string;
+//   description: string;
+// };
 
-const repeatOptions: RepeatOption[] = [
-  { value: "none", title: "None", description: "Does not repeat" },
-  { value: "daily", title: "Daily", description: "Repeats every day" },
-  { value: "weekly", title: "Weekly", description: "Repeats every week" },
-  { value: "monthly", title: "Monthly", description: "Repeats every month" },
-  { value: "yearly", title: "Yearly", description: "Repeats every year" },
-];
+// const repeatOptions: RepeatOption[] = [
+//   { value: "none", title: "None", description: "Does not repeat" },
+//   { value: "daily", title: "Daily", description: "Repeats every day" },
+//   { value: "weekly", title: "Weekly", description: "Repeats every week" },
+//   { value: "monthly", title: "Monthly", description: "Repeats every month" },
+//   { value: "yearly", title: "Yearly", description: "Repeats every year" },
+// ];
 
 export default function CreateOrEditExpenseDialog(
   props: CreateOrEditExpenseProps
@@ -225,7 +223,7 @@ export default function CreateOrEditExpenseDialog(
                 }}
               />
 
-              <RadioCard.Root
+              {/* <RadioCard.Root
                 name="repeat"
                 defaultValue={expense?.repeat || "none"}
               >
@@ -248,7 +246,7 @@ export default function CreateOrEditExpenseDialog(
                     </RadioCard.Item>
                   ))}
                 </HStack>
-              </RadioCard.Root>
+              </RadioCard.Root> */}
             </Dialog.Body>
             <Dialog.Footer>
               <Dialog.ActionTrigger asChild>

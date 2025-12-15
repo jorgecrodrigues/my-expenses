@@ -11,15 +11,6 @@ const commonExpenseArgs = {
   amount: v.number(),
   category: v.string(),
   date: v.string(),
-  repeat: v.union(
-    v.literal("none"),
-    v.literal("daily"),
-    v.literal("weekly"),
-    v.literal("monthly"),
-    v.literal("yearly")
-  ),
-  repeatStartDate: v.optional(v.string()),
-  repeatEndDate: v.optional(v.string()),
 };
 
 /**
@@ -150,7 +141,6 @@ export const addExpense = mutation({
       description: args.description,
       amount: args.amount,
       category: args.category,
-      repeat: args.repeat,
       date: args.date,
     });
     return expenseId;
@@ -169,7 +159,6 @@ export const updateExpense = mutation({
       description: args.description,
       amount: args.amount,
       category: args.category,
-      repeat: args.repeat,
       date: args.date,
     });
   },
@@ -233,11 +222,6 @@ export const createFakeExpense = internalMutation(async (ctx) => {
           to: new Date(new Date().getFullYear(), 11, 31),
         })
         .toISOString(),
-      repeat: Array.from(["none", "daily", "weekly", "monthly", "yearly"])[
-        Math.floor(Math.random() * 5)
-      ] as "none" | "daily" | "weekly" | "monthly" | "yearly",
-      repeatStartDate: undefined,
-      repeatEndDate: undefined,
     });
     console.log(`Created expense with ID: ${expenseId}`);
   }
