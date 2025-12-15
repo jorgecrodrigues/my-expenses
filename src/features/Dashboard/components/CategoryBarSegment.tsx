@@ -99,13 +99,16 @@ export default function CategoryBarSegment() {
               <option value={-1}>Todos os Meses</option>
               {Array.from({ length: 12 }, (_, i) => i)
                 .reverse()
-                .map((month) => (
-                  <option key={month} value={month}>
-                    {new Date(0, month).toLocaleString("pt-BR", {
-                      month: "long",
-                    })}
-                  </option>
-                ))}
+                .map((month) => {
+                  const d = new Date(0, month).toLocaleDateString("pt-BR", {
+                    month: "long",
+                  });
+                  return (
+                    <option key={month} value={month}>
+                      {d.charAt(0).toUpperCase() + d.slice(1)}
+                    </option>
+                  );
+                })}
             </NativeSelect.Field>
             <NativeSelect.Indicator />
           </NativeSelect.Root>
@@ -115,13 +118,14 @@ export default function CategoryBarSegment() {
               onChange={handleYearChange}
             >
               <option value={-1}>Todos os Anos</option>
-              {Array.from({ length: 5 }, (_, i) => today.getFullYear() - i).map(
-                (year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                )
-              )}
+              {Array.from(
+                { length: 5 },
+                (_, i) => today.getFullYear() + 1 - i
+              ).map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
             </NativeSelect.Field>
             <NativeSelect.Indicator />
           </NativeSelect.Root>
