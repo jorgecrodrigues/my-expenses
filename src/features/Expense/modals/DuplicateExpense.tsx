@@ -7,8 +7,10 @@ import {
   Dialog,
   Field,
   Flex,
+  HStack,
   Input,
   Portal,
+  RadioCard,
 } from "@chakra-ui/react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
@@ -19,13 +21,25 @@ import { toaster } from "../../../components/ui/toaster";
 
 type Expense = Doc<"expenses">;
 
-interface CreateOrEditExpenseProps {
-  expense?: Expense;
+interface DuplicateExpenseProps {
+  expense: Expense;
 }
 
-export default function CreateOrEditExpenseDialog(
-  props: CreateOrEditExpenseProps
-) {
+type RepeatOption = {
+  value: "none" | "daily" | "weekly" | "monthly" | "yearly";
+  title: string;
+  description: string;
+};
+
+const repeatOptions: RepeatOption[] = [
+  { value: "none", title: "None", description: "Does not repeat" },
+  { value: "daily", title: "Daily", description: "Repeats every day" },
+  { value: "weekly", title: "Weekly", description: "Repeats every week" },
+  { value: "monthly", title: "Monthly", description: "Repeats every month" },
+  { value: "yearly", title: "Yearly", description: "Repeats every year" },
+];
+
+export default function DuplicateExpenseDialog(props: DuplicateExpenseProps) {
   const { expense, ...rest } = props;
 
   const [open, setOpen] = React.useState<boolean>(false);
@@ -35,8 +49,7 @@ export default function CreateOrEditExpenseDialog(
   const expenseCategoryOptions = useQuery(
     api.expenses.getExpenseCategoryOptions
   );
-  const addExpense = useMutation(api.expenses.addExpense);
-  const updateExpense = useMutation(api.expenses.updateExpense);
+  const addDuplicateExpense = useMutation(api.expenses.addDuplicateExpense);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -51,54 +64,37 @@ export default function CreateOrEditExpenseDialog(
       .replace(".", "")
       .replace(",", ".");
 
-    if (expense) {
-      updateExpense({
-        ...(formValues as unknown as Omit<Expense, "userId">),
-        id: expense._id,
-        userId: expense.userId,
-        amount: Number(sanitizedAmount),
-      })
-        .then(() => {
-          setOpen(false);
-          toaster.create({
-            type: "success",
-            title: "Expense updated successfully!",
-            duration: 2000,
-          });
-        })
-        .catch((error) => {
-          console.error(error);
-          toaster.create({
-            type: "error",
-            title: "Failed to update expense.",
-            description: error.message,
-            duration: 4000,
-          });
+    addDuplicateExpense({
+      ...(formValues as unknown as Omit<Expense, "userId">),
+      userId: user?._id as Id<"users">,
+      amount: Number(sanitizedAmount),
+      date: expense.date,
+      repeat: formValues.repeat as
+        | "none"
+        | "daily"
+        | "weekly"
+        | "monthly"
+        | "yearly",
+      repeatStartDate: formValues.repeatStartDate as string,
+      repeatEndDate: formValues.repeatEndDate as string,
+    })
+      .then(() => {
+        setOpen(false);
+        toaster.create({
+          type: "success",
+          title: "Expense duplicated successfully.",
+          duration: 2000,
         });
-    } else {
-      addExpense({
-        ...(formValues as unknown as Omit<Expense, "userId">),
-        userId: user?._id as Id<"users">,
-        amount: Number(sanitizedAmount),
       })
-        .then(() => {
-          setOpen(false);
-          toaster.create({
-            type: "success",
-            title: "Expense added successfully!",
-            duration: 2000,
-          });
-        })
-        .catch((error) => {
-          console.error(error);
-          toaster.create({
-            type: "error",
-            title: "Failed to add expense.",
-            description: error.message,
-            duration: 4000,
-          });
+      .catch((error) => {
+        console.error(error);
+        toaster.create({
+          type: "error",
+          title: "Failed to duplicate expense.",
+          description: error.message,
+          duration: 4000,
         });
-    }
+      });
   };
 
   return (
@@ -112,12 +108,8 @@ export default function CreateOrEditExpenseDialog(
       {...rest}
     >
       <Dialog.Trigger asChild>
-        <Button
-          variant="surface"
-          colorPalette={props.expense ? "blue" : "green"}
-          size="xs"
-        >
-          {props.expense ? "Edit Expense" : "Add Expense"}
+        <Button variant="surface" colorPalette="orange" size="xs">
+          Duplicate Expense
         </Button>
       </Dialog.Trigger>
       <Portal>
@@ -125,9 +117,7 @@ export default function CreateOrEditExpenseDialog(
         <Dialog.Positioner>
           <Dialog.Content as="form" onSubmit={handleSubmit}>
             <Dialog.Header>
-              <Dialog.Title>
-                {expense ? "Edit Expense" : "Add New Expense"}
-              </Dialog.Title>
+              <Dialog.Title>Duplicate Expense</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body display="flex" flexDirection="column" gap={4}>
               <Field.Root>
@@ -139,7 +129,7 @@ export default function CreateOrEditExpenseDialog(
                   type="text"
                   name="name"
                   placeholder="Enter name"
-                  defaultValue={expense?.name}
+                  defaultValue={expense.name}
                   required
                 />
                 <Field.HelperText>
@@ -156,7 +146,7 @@ export default function CreateOrEditExpenseDialog(
                   type="text"
                   name="description"
                   placeholder="Enter description"
-                  defaultValue={expense?.description}
+                  defaultValue={expense.description}
                   required
                 />
                 <Field.HelperText>
@@ -174,7 +164,7 @@ export default function CreateOrEditExpenseDialog(
                     type="text"
                     name="amount"
                     placeholder="Enter amount"
-                    defaultValue={expense?.amount}
+                    defaultValue={expense.amount}
                     required
                   />
                   <Field.HelperText>
@@ -182,20 +172,30 @@ export default function CreateOrEditExpenseDialog(
                   </Field.HelperText>
                   <Field.ErrorText />
                 </Field.Root>
+                <CategoryCombobox
+                  initialItems={expenseCategoryOptions}
+                  selectedItem={expense.category}
+                  inputProps={{
+                    name: "category",
+                    placeholder: "Enter category",
+                    required: true,
+                  }}
+                />
+              </Flex>
+
+              <HStack>
                 <Field.Root>
                   <Field.Label>
-                    Date
+                    Start Date
                     <Field.RequiredIndicator />
                   </Field.Label>
                   <Input
                     type="datetime-local"
-                    name="date"
-                    placeholder="Enter date"
-                    defaultValue={
-                      expense?.date
-                        ? new Date(expense.date).toISOString().slice(0, 16)
-                        : new Date().toISOString().slice(0, 16)
-                    }
+                    name="repeatStartDate"
+                    placeholder="Enter start date"
+                    defaultValue={new Date(expense.date)
+                      .toISOString()
+                      .slice(0, 16)}
                     required
                   />
                   <Field.HelperText>
@@ -203,17 +203,48 @@ export default function CreateOrEditExpenseDialog(
                   </Field.HelperText>
                   <Field.ErrorText />
                 </Field.Root>
-              </Flex>
+                <Field.Root>
+                  <Field.Label>
+                    End Date
+                    <Field.RequiredIndicator />
+                  </Field.Label>
+                  <Input
+                    type="datetime-local"
+                    name="repeatEndDate"
+                    placeholder="Enter end date"
+                    defaultValue={new Date(expense.date)
+                      .toISOString()
+                      .slice(0, 16)}
+                    required
+                  />
+                  <Field.HelperText>
+                    Please enter the expense date.
+                  </Field.HelperText>
+                  <Field.ErrorText />
+                </Field.Root>
+              </HStack>
 
-              <CategoryCombobox
-                initialItems={expenseCategoryOptions}
-                selectedItem={expense?.category}
-                inputProps={{
-                  name: "category",
-                  placeholder: "Enter category",
-                  required: true,
-                }}
-              />
+              <RadioCard.Root name="repeat" defaultValue={"none"}>
+                <RadioCard.Label>Repeat</RadioCard.Label>
+                <HStack align="stretch" wrap="wrap">
+                  {repeatOptions.map((option) => (
+                    <RadioCard.Item key={option.value} value={option.value}>
+                      <RadioCard.ItemHiddenInput />
+                      <RadioCard.ItemControl>
+                        <RadioCard.ItemContent>
+                          <RadioCard.ItemText>
+                            {option.title}
+                          </RadioCard.ItemText>
+                          <RadioCard.ItemDescription>
+                            {option.description}
+                          </RadioCard.ItemDescription>
+                        </RadioCard.ItemContent>
+                        <RadioCard.ItemIndicator />
+                      </RadioCard.ItemControl>
+                    </RadioCard.Item>
+                  ))}
+                </HStack>
+              </RadioCard.Root>
             </Dialog.Body>
             <Dialog.Footer>
               <Dialog.ActionTrigger asChild>

@@ -130,6 +130,12 @@ export const getExpenseByCategoryValues = query({
   },
 });
 
+/**
+ * Adds a new expense to the database.
+ *
+ * @param args - The arguments for the new expense.
+ * @returns The ID of the newly created expense.
+ */
 export const addExpense = mutation({
   args: {
     ...commonExpenseArgs,
@@ -144,6 +150,63 @@ export const addExpense = mutation({
       date: args.date,
     });
     return expenseId;
+  },
+});
+
+/**
+ * Adds duplicate expenses based on a repeat interval.
+ *
+ * @param args - The arguments for the new expenses.
+ * @returns An array of IDs of the newly created expenses.
+ */
+export const addDuplicateExpense = mutation({
+  args: {
+    ...commonExpenseArgs,
+    repeat: v.union(
+      v.literal("none"),
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("monthly"),
+      v.literal("yearly")
+    ),
+    repeatStartDate: v.string(),
+    repeatEndDate: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const expenseIds: Id<"expenses">[] = [];
+
+    const startDate = new Date(args.repeatStartDate);
+    const endDate = new Date(args.repeatEndDate);
+
+    const iterationDate = new Date(startDate);
+
+    while (iterationDate <= endDate) {
+      const expenseId = await ctx.db.insert("expenses", {
+        userId: args.userId,
+        name: args.name,
+        description: args.description,
+        amount: args.amount,
+        category: args.category,
+        date: iterationDate.toISOString(),
+      });
+
+      expenseIds.push(expenseId);
+
+      if (args.repeat === "none") {
+        iterationDate.setTime(endDate.getTime() + 1); // Exit the loop
+        break;
+      } else if (args.repeat === "daily") {
+        iterationDate.setDate(iterationDate.getDate() + 1);
+      } else if (args.repeat === "weekly") {
+        iterationDate.setDate(iterationDate.getDate() + 7);
+      } else if (args.repeat === "monthly") {
+        iterationDate.setMonth(iterationDate.getMonth() + 1);
+      } else if (args.repeat === "yearly") {
+        iterationDate.setFullYear(iterationDate.getFullYear() + 1);
+      }
+    }
+
+    return expenseIds;
   },
 });
 

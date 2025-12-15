@@ -7,6 +7,7 @@ import { Badge, Button, Flex, Skeleton, Table } from "@chakra-ui/react";
 import CreateOrEditExpenseDialog from "../modals/CreateOrEditExpense";
 import RemoveExpenseDialog from "../modals/RemoveExpense";
 import type { Id } from "../../../../convex/_generated/dataModel";
+import DuplicateExpenseDialog from "../modals/DuplicateExpense";
 
 export default function ExpensesList() {
   const [perPage] = React.useState<number>(15);
@@ -69,6 +70,7 @@ export default function ExpensesList() {
               </Table.Cell>
               <Table.Cell>
                 <Flex gap={2}>
+                  <DuplicateExpenseDialog expense={expense} />
                   <CreateOrEditExpenseDialog expense={expense} />
                   <RemoveExpenseDialog expense={expense} />
                 </Flex>
