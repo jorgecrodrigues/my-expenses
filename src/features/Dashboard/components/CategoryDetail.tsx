@@ -89,7 +89,7 @@ export default function CategoryDetail() {
         </Text>
       </VStack>
       <VStack justify="center" align="center">
-        <Chart.Root maxH={280} chart={chart}>
+        <Chart.Root h={280} chart={chart}>
           <BarChart data={chart.data}>
             <CartesianGrid
               stroke={chart.color("border.muted")}
