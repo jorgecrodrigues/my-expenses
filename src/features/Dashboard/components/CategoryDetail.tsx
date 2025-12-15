@@ -72,7 +72,7 @@ export default function CategoryDetail() {
 
   return (
     <>
-      <VStack>
+      <VStack spaceY={0} lineHeight={1}>
         <Text fontSize="lg" fontWeight="bold">
           Show details for category: {params.category || "None"}
         </Text>
@@ -80,16 +80,16 @@ export default function CategoryDetail() {
           Breakdown of expenses by month for the year{" "}
           {date ? date.getFullYear() : ""}:
         </Text>
-        <Text mb={4}>
+        <Text>
           Total Expenses:{" "}
-          {chart.getTotal("amount").toLocaleString("en-US", {
+          {chart.getTotal("amount").toLocaleString("pt-BR", {
             style: "currency",
             currency: "BRL",
           })}
         </Text>
       </VStack>
       <VStack justify="center" align="center">
-        <Chart.Root maxH="xs" chart={chart}>
+        <Chart.Root maxH={280} chart={chart}>
           <BarChart data={chart.data}>
             <CartesianGrid
               stroke={chart.color("border.muted")}

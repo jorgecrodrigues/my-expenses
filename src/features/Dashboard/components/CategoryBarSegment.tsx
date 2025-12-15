@@ -83,7 +83,7 @@ export default function CategoryBarSegment() {
   return (
     <>
       <HStack justify="flex-end">
-        <HStack mb={4}>
+        <HStack mb={2}>
           <Button
             variant="surface"
             size="sm"
