@@ -3,29 +3,51 @@
 import React from "react";
 import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { Badge, Button, Flex, Skeleton, Table } from "@chakra-ui/react";
+import {
+  Badge,
+  Button,
+  Flex,
+  HStack,
+  Input,
+  Skeleton,
+  Table,
+} from "@chakra-ui/react";
 import CreateOrEditExpenseDialog from "../modals/CreateOrEditExpense";
 import RemoveExpenseDialog from "../modals/RemoveExpense";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import DuplicateExpenseDialog from "../modals/DuplicateExpense";
 
 export default function ExpensesList() {
+  const [search, setSearch] = React.useState<string>("");
   const [perPage] = React.useState<number>(15);
 
   const user = useQuery(api.users.viewer);
 
   const { results, status, loadMore } = usePaginatedQuery(
     api.expenses.getExpenses,
-    { userId: user?._id as Id<"users">, orderBy: "by_date", order: "desc" },
+    {
+      userId: user?._id as Id<"users">,
+      orderBy: "by_date",
+      order: "desc",
+      search,
+    },
     { initialNumItems: perPage }
   );
 
   return (
     <React.Fragment>
-      <Flex justifyContent="space-between" alignItems="center" mb={4}>
-        <h2>Expenses List</h2>
+      <h2>Expenses List</h2>
+      <HStack mb={4} justifyContent="flex-end" alignItems="center" gap={8}>
+        <HStack>
+          <Input
+            size="sm"
+            placeholder="Search expenses..."
+            rounded="lg"
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </HStack>
         <CreateOrEditExpenseDialog />
-      </Flex>
+      </HStack>
       <Table.Root size="sm" striped>
         <Table.Header>
           <Table.Row>

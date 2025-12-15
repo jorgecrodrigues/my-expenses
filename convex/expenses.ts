@@ -25,6 +25,7 @@ const commonExpenseArgs = {
 export const getExpenses = query({
   args: {
     userId: v.id("users"),
+    search: v.optional(v.string()),
     orderBy: v.optional(v.union(v.literal("by_amount"), v.literal("by_date"))),
     order: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
     paginationOpts: paginationOptsValidator,
@@ -33,6 +34,14 @@ export const getExpenses = query({
     return await ctx.db
       .query("expenses")
       .filter((q) => q.eq(q.field("userId"), args.userId))
+      .filter((q) => {
+        if (!args.search) return true;
+        return q.or(
+          q.eq(q.field("name"), args.search),
+          q.eq(q.field("description"), args.search),
+          q.eq(q.field("category"), args.search)
+        );
+      })
       .order(args.order || "asc")
       .paginate(args.paginationOpts);
   },
