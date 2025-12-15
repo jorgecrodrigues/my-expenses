@@ -11,15 +11,6 @@ const commonExpenseArgs = {
   amount: v.number(),
   category: v.string(),
   date: v.string(),
-  repeat: v.union(
-    v.literal("none"),
-    v.literal("daily"),
-    v.literal("weekly"),
-    v.literal("monthly"),
-    v.literal("yearly")
-  ),
-  repeatStartDate: v.optional(v.string()),
-  repeatEndDate: v.optional(v.string()),
 };
 
 /**
@@ -34,6 +25,7 @@ const commonExpenseArgs = {
 export const getExpenses = query({
   args: {
     userId: v.id("users"),
+    search: v.optional(v.string()),
     orderBy: v.optional(v.union(v.literal("by_amount"), v.literal("by_date"))),
     order: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
     paginationOpts: paginationOptsValidator,
@@ -42,6 +34,14 @@ export const getExpenses = query({
     return await ctx.db
       .query("expenses")
       .filter((q) => q.eq(q.field("userId"), args.userId))
+      .filter((q) => {
+        if (!args.search) return true;
+        return q.or(
+          q.eq(q.field("name"), args.search),
+          q.eq(q.field("description"), args.search),
+          q.eq(q.field("category"), args.search)
+        );
+      })
       .order(args.order || "asc")
       .paginate(args.paginationOpts);
   },
@@ -139,6 +139,12 @@ export const getExpenseByCategoryValues = query({
   },
 });
 
+/**
+ * Adds a new expense to the database.
+ *
+ * @param args - The arguments for the new expense.
+ * @returns The ID of the newly created expense.
+ */
 export const addExpense = mutation({
   args: {
     ...commonExpenseArgs,
@@ -150,10 +156,66 @@ export const addExpense = mutation({
       description: args.description,
       amount: args.amount,
       category: args.category,
-      repeat: args.repeat,
       date: args.date,
     });
     return expenseId;
+  },
+});
+
+/**
+ * Adds duplicate expenses based on a repeat interval.
+ *
+ * @param args - The arguments for the new expenses.
+ * @returns An array of IDs of the newly created expenses.
+ */
+export const addDuplicateExpense = mutation({
+  args: {
+    ...commonExpenseArgs,
+    repeat: v.union(
+      v.literal("none"),
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("monthly"),
+      v.literal("yearly")
+    ),
+    repeatStartDate: v.string(),
+    repeatEndDate: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const expenseIds: Id<"expenses">[] = [];
+
+    const startDate = new Date(args.repeatStartDate);
+    const endDate = new Date(args.repeatEndDate);
+
+    const iterationDate = new Date(startDate);
+
+    while (iterationDate <= endDate) {
+      const expenseId = await ctx.db.insert("expenses", {
+        userId: args.userId,
+        name: args.name,
+        description: args.description,
+        amount: args.amount,
+        category: args.category,
+        date: iterationDate.toISOString(),
+      });
+
+      expenseIds.push(expenseId);
+
+      if (args.repeat === "none") {
+        iterationDate.setTime(endDate.getTime() + 1); // Exit the loop
+        break;
+      } else if (args.repeat === "daily") {
+        iterationDate.setDate(iterationDate.getDate() + 1);
+      } else if (args.repeat === "weekly") {
+        iterationDate.setDate(iterationDate.getDate() + 7);
+      } else if (args.repeat === "monthly") {
+        iterationDate.setMonth(iterationDate.getMonth() + 1);
+      } else if (args.repeat === "yearly") {
+        iterationDate.setFullYear(iterationDate.getFullYear() + 1);
+      }
+    }
+
+    return expenseIds;
   },
 });
 
@@ -169,7 +231,6 @@ export const updateExpense = mutation({
       description: args.description,
       amount: args.amount,
       category: args.category,
-      repeat: args.repeat,
       date: args.date,
     });
   },
@@ -233,11 +294,6 @@ export const createFakeExpense = internalMutation(async (ctx) => {
           to: new Date(new Date().getFullYear(), 11, 31),
         })
         .toISOString(),
-      repeat: Array.from(["none", "daily", "weekly", "monthly", "yearly"])[
-        Math.floor(Math.random() * 5)
-      ] as "none" | "daily" | "weekly" | "monthly" | "yearly",
-      repeatStartDate: undefined,
-      repeatEndDate: undefined,
     });
     console.log(`Created expense with ID: ${expenseId}`);
   }

@@ -30,15 +30,6 @@ export default defineSchema({
     amount: v.number(),
     category: v.string(),
     date: v.string(),
-    repeat: v.union(
-      v.literal("none"),
-      v.literal("daily"),
-      v.literal("weekly"),
-      v.literal("monthly"),
-      v.literal("yearly")
-    ),
-    repeatStartDate: v.optional(v.string()),
-    repeatEndDate: v.optional(v.string()),
   })
     .index("by_amount", ["amount"])
     .index("by_date", ["date"]),
