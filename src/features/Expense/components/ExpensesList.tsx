@@ -16,9 +16,13 @@ import CreateOrEditExpenseDialog from "../modals/CreateOrEditExpense";
 import RemoveExpenseDialog from "../modals/RemoveExpense";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import DuplicateExpenseDialog from "../modals/DuplicateExpense";
+import AvailableYearSelect from "@/shared/components/AvailableYearSelect";
+import AvailableMonthSelect from "@/shared/components/AvailableMonthSelect";
 
 export default function ExpensesList() {
   const [search, setSearch] = React.useState<string>("");
+  const [month, setMonth] = React.useState<number[]>([]);
+  const [year, setYear] = React.useState<number[]>([]);
   const [perPage] = React.useState<number>(15);
 
   const user = useQuery(api.users.viewer);
@@ -30,9 +34,25 @@ export default function ExpensesList() {
       orderBy: "by_date",
       order: "desc",
       search,
+      month: month[0] ? Number(month[0]) : undefined,
+      year: year ? Number(year[0]) : undefined,
     },
     { initialNumItems: perPage }
   );
+
+  const handleChangeMonth = (details: { value: string[] }) => {
+    if (year.length === 0 && details.value.length > 0) {
+      setYear([new Date().getFullYear() + 10]);
+    }
+    setMonth(details.value as unknown as number[]);
+  };
+
+  const handleChangeYear = (details: { value: string[] }) => {
+    if (month.length === 0 && details.value.length > 0) {
+      setMonth([new Date().getMonth() + 1]);
+    }
+    setYear(details.value as unknown as number[]);
+  };
 
   return (
     <React.Fragment>
@@ -45,6 +65,11 @@ export default function ExpensesList() {
             rounded="lg"
             onChange={(e) => setSearch(e.target.value)}
           />
+          <AvailableMonthSelect
+            value={month}
+            onValueChange={handleChangeMonth}
+          />
+          <AvailableYearSelect value={year} onValueChange={handleChangeYear} />
         </HStack>
         <CreateOrEditExpenseDialog />
       </HStack>

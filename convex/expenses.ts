@@ -26,6 +26,8 @@ export const getExpenses = query({
   args: {
     userId: v.id("users"),
     search: v.optional(v.string()),
+    month: v.optional(v.number()),
+    year: v.optional(v.number()),
     orderBy: v.optional(v.union(v.literal("by_amount"), v.literal("by_date"))),
     order: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
     paginationOpts: paginationOptsValidator,
@@ -40,6 +42,19 @@ export const getExpenses = query({
           q.eq(q.field("name"), args.search),
           q.eq(q.field("description"), args.search),
           q.eq(q.field("category"), args.search)
+        );
+      })
+      .filter((q) => {
+        if (!args.month || !args.year) return true;
+        return q.and(
+          q.gte(
+            q.field("date"),
+            new Date(args.year, args.month - 1, 1).toISOString()
+          ),
+          q.lte(
+            q.field("date"),
+            new Date(args.year, args.month, 0, 23, 59, 59, 999).toISOString()
+          )
         );
       })
       .order(args.order || "asc")
@@ -92,6 +107,32 @@ export const getExpenseCategoryOptions = query({
       value: category,
       label: category,
     }));
+  },
+});
+
+export const getExpenseMinMaxYearDateOptions = query({
+  handler: async (ctx) => {
+    const expenses = await ctx.db.query("expenses").collect();
+
+    if (expenses.length === 0) {
+      return [];
+    }
+
+    let minYear = Infinity;
+    let maxYear = -Infinity;
+
+    for (const expense of expenses) {
+      const year = new Date(expense.date).getFullYear();
+      if (year < minYear) minYear = year;
+      if (year > maxYear) maxYear = year;
+    }
+
+    const years: number[] = [];
+    for (let year = minYear; year <= maxYear; year++) {
+      years.push(year);
+    }
+
+    return years;
   },
 });
 
@@ -290,8 +331,8 @@ export const createFakeExpense = internalMutation(async (ctx) => {
       category: faker.commerce.department(),
       date: faker.date
         .between({
-          from: new Date(new Date().getFullYear(), 0, 1),
-          to: new Date(new Date().getFullYear(), 11, 31),
+          from: new Date(new Date().getFullYear() - 2, 0, 1), // Jan 1st, two years ago
+          to: new Date(new Date().getFullYear() + 1, 11, 31), // Dec 31st, next year
         })
         .toISOString(),
     });
