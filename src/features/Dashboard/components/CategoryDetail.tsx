@@ -4,7 +4,10 @@ import { useParams } from "wouter";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { Chart, useChart } from "@chakra-ui/charts";
-import { generateColorByString } from "@/shared/utils/color";
+import {
+  generateColorByString,
+  getContrastingTextColor,
+} from "@/shared/utils/color";
 import {
   Bar,
   BarChart,
@@ -147,7 +150,7 @@ export default function CategoryDetail() {
           <Text key={name} fontSize="sm">
             {name}:{" "}
             <Span fontWeight="bold">
-              {total?.toLocaleString("en-US", {
+              {total?.toLocaleString("pt-BR", {
                 style: "currency",
                 currency: "BRL",
               })}
@@ -158,7 +161,7 @@ export default function CategoryDetail() {
 
       <Text fontWeight={700} color="red.400" textAlign="right" lineHeight={0}>
         Total Expenses:{" "}
-        {totalByCategory.toLocaleString("en-US", {
+        {totalByCategory.toLocaleString("pt-BR", {
           style: "currency",
           currency: "BRL",
         })}
@@ -207,7 +210,9 @@ export default function CategoryDetail() {
                   style={{
                     fontSize: 12,
                     fontWeight: 600,
-                    fill: chart.color("fg"),
+                    fill: getContrastingTextColor(
+                      generateColorByString(chart.key(item.name).toString())
+                    ),
                   }}
                 />
               </Bar>

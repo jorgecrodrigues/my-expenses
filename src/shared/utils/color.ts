@@ -56,3 +56,24 @@ export const generateColorByString = (input: string): string => {
       .padStart(2, "0");
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 };
+
+/**
+ * Generate a text color (black or white) based on the background color for better readability.
+ * @param backgroundColor The background color in hex format.
+ * @returns The text color in hex format (#000000 for black, #FFFFFF for white).
+ */
+export const getContrastingTextColor = (backgroundColor: string): string => {
+  // Remove the hash if present
+  const hex = backgroundColor.replace("#", "");
+
+  // Convert hex to RGB
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  // Calculate luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  // Return black for light backgrounds and white for dark backgrounds
+  return luminance > 0.5 ? "#000000" : "#FFFFFF";
+};
