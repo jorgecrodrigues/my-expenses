@@ -211,7 +211,7 @@ export default function CategoryDetail() {
                     fontSize: 12,
                     fontWeight: 600,
                     fill: getContrastingTextColor(
-                      generateColorByString(chart.key(item.name).toString())
+                      generateColorByString(item?.name?.toString() ?? "")
                     ),
                   }}
                 />
@@ -222,7 +222,7 @@ export default function CategoryDetail() {
         <Text fontSize="sm" color="gray.500">
           Data for{" "}
           {date
-            ? date.toLocaleDateString("en-US", {
+            ? date.toLocaleDateString("pt-BR", {
                 year: "numeric",
               })
             : "All Time"}

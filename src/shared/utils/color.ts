@@ -63,6 +63,11 @@ export const generateColorByString = (input: string): string => {
  * @returns The text color in hex format (#000000 for black, #FFFFFF for white).
  */
 export const getContrastingTextColor = (backgroundColor: string): string => {
+  // Validate hex color format
+  if (!/^#([0-9A-Fa-f]{6})$/.test(backgroundColor)) {
+    throw new Error("Invalid hex color format. Expected format: #RRGGBB");
+  }
+
   // Remove the hash if present
   const hex = backgroundColor.replace("#", "");
 
