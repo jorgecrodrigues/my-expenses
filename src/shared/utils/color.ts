@@ -56,3 +56,44 @@ export const generateColorByString = (input: string): string => {
       .padStart(2, "0");
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 };
+
+/**
+ * Generate a text color (black or white) based on the background color for better readability.
+ * @param backgroundColor The background color in hex format.
+ * @returns The text color in hex format (#000000 for black, #FFFFFF for white).
+ */
+export const getContrastingTextColor = (backgroundColor: string): string => {
+  // Validate hex color format
+  if (!/^#([0-9A-Fa-f]{6})$/.test(backgroundColor)) {
+    throw new Error("Invalid hex color format. Expected format: #RRGGBB");
+  }
+
+  // Remove the hash if present
+  const hex = backgroundColor.replace("#", "");
+
+  // Convert hex to RGB
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+
+  // Convert sRGB to linear RGB per WCAG definition
+  const srgbToLinear = (value: number): number => {
+    const c = value / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+
+  const rLinear = srgbToLinear(r);
+  const gLinear = srgbToLinear(g);
+  const bLinear = srgbToLinear(b);
+
+  // Calculate relative luminance according to WCAG
+  const luminance =
+    0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
+
+  // Compute contrast ratios with black and white text
+  const contrastWithBlack = (luminance + 0.05) / 0.05;
+  const contrastWithWhite = (1.05) / (luminance + 0.05);
+
+  // Return the text color (black or white) that provides higher contrast
+  return contrastWithBlack >= contrastWithWhite ? "#000000" : "#FFFFFF";
+};
