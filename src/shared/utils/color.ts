@@ -76,9 +76,24 @@ export const getContrastingTextColor = (backgroundColor: string): string => {
   const g = parseInt(hex.substring(2, 4), 16);
   const b = parseInt(hex.substring(4, 6), 16);
 
-  // Calculate luminance
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  // Convert sRGB to linear RGB per WCAG definition
+  const srgbToLinear = (value: number): number => {
+    const c = value / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
 
-  // Return black for light backgrounds and white for dark backgrounds
-  return luminance > 0.5 ? "#000000" : "#FFFFFF";
+  const rLinear = srgbToLinear(r);
+  const gLinear = srgbToLinear(g);
+  const bLinear = srgbToLinear(b);
+
+  // Calculate relative luminance according to WCAG
+  const luminance =
+    0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
+
+  // Compute contrast ratios with black and white text
+  const contrastWithBlack = (luminance + 0.05) / 0.05;
+  const contrastWithWhite = (1.05) / (luminance + 0.05);
+
+  // Return the text color (black or white) that provides higher contrast
+  return contrastWithBlack >= contrastWithWhite ? "#000000" : "#FFFFFF";
 };
