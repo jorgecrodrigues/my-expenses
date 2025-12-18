@@ -14,7 +14,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Text, VStack } from "@chakra-ui/react";
+import { HStack, Span, Text, VStack } from "@chakra-ui/react";
 
 type NormalizedData = {
   month: string;
@@ -54,6 +54,20 @@ export default function CategoryDetail() {
   const totalByCategory = React.useMemo(() => {
     if (!data) return 0;
     return data.reduce((sum, item) => sum + item.amount, 0);
+  }, [data]);
+  // Calculate total expenses for the category by name
+  const totalByCategoryByName = React.useMemo(() => {
+    if (!data) return {};
+    return data.reduce(
+      (acc, item) => {
+        if (!acc[item.name]) {
+          acc[item.name] = 0;
+        }
+        acc[item.name] += item.amount;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
   }, [data]);
 
   // Normalize data for chart representation
@@ -120,22 +134,36 @@ export default function CategoryDetail() {
 
   return (
     <>
-      <VStack spaceY={0} lineHeight={1}>
-        <Text fontSize="lg" fontWeight="bold">
-          Show details for category: {params.category || "None"}
-        </Text>
-        <Text fontSize="sm">
-          Breakdown of expenses by month for the year{" "}
-          {date ? date.getFullYear() : ""}:
-        </Text>
-        <Text>
-          Total Expenses:{" "}
-          {totalByCategory.toLocaleString("en-US", {
-            style: "currency",
-            currency: "BRL",
-          })}
-        </Text>
-      </VStack>
+      <Text fontSize="lg" fontWeight="bold" lineHeight={0}>
+        Show details for category: {params.category || "None"}
+      </Text>
+      <Text fontSize="sm" lineHeight={0}>
+        Breakdown of expenses by month for the year{": "}
+        {date ? date.getFullYear() : "All Time"}
+      </Text>
+
+      <HStack spaceX={4} wrap="wrap" justify="flex-end" align="flex-end">
+        {Object.entries(totalByCategoryByName).map(([name, total]) => (
+          <Text key={name} fontSize="sm">
+            {name}:{" "}
+            <Span fontWeight="bold">
+              {total?.toLocaleString("en-US", {
+                style: "currency",
+                currency: "BRL",
+              })}
+            </Span>
+          </Text>
+        ))}
+      </HStack>
+
+      <Text fontWeight={700} color="red.400" textAlign="right" lineHeight={0}>
+        Total Expenses:{" "}
+        {totalByCategory.toLocaleString("en-US", {
+          style: "currency",
+          currency: "BRL",
+        })}
+      </Text>
+
       <VStack justify="center" align="center">
         <Chart.Root h={280} chart={chart}>
           <BarChart data={chart.data} barCategoryGap={4} stackOffset="positive">
@@ -175,8 +203,12 @@ export default function CategoryDetail() {
               >
                 <LabelList
                   dataKey={chart.key(item.name)}
-                  position="top"
-                  style={{ fontWeight: 600, fill: chart.color("fg") }}
+                  position="middle"
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    fill: chart.color("fg"),
+                  }}
                 />
               </Bar>
             ))}
