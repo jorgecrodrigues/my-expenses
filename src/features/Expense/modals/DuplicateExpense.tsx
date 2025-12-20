@@ -8,6 +8,7 @@ import {
   Field,
   Flex,
   HStack,
+  IconButton,
   Input,
   Portal,
   RadioCard,
@@ -18,6 +19,7 @@ import type { Doc, Id } from "../../../../convex/_generated/dataModel";
 import CategoryCombobox from "../components/CategoryCombobox";
 import BRLCurrencyInput from "../../../shared/components/BRLCurrencyInput";
 import { toaster } from "../../../components/ui/toaster";
+import { IconCopyPlusFilled } from "@tabler/icons-react";
 
 type Expense = Doc<"expenses">;
 
@@ -108,9 +110,13 @@ export default function DuplicateExpenseDialog(props: DuplicateExpenseProps) {
       {...rest}
     >
       <Dialog.Trigger asChild>
-        <Button variant="surface" colorPalette="orange" size="xs">
-          Duplicate Expense
-        </Button>
+        <IconButton
+          aria-label="Duplicate Expense"
+          title="Duplicate Expense"
+          variant="outline"
+        >
+          <IconCopyPlusFilled />
+        </IconButton>
       </Dialog.Trigger>
       <Portal>
         <Dialog.Backdrop />

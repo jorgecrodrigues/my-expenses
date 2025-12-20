@@ -7,6 +7,7 @@ import {
   Dialog,
   Field,
   Flex,
+  IconButton,
   Input,
   Portal,
 } from "@chakra-ui/react";
@@ -16,6 +17,7 @@ import type { Doc, Id } from "../../../../convex/_generated/dataModel";
 import CategoryCombobox from "../components/CategoryCombobox";
 import BRLCurrencyInput from "../../../shared/components/BRLCurrencyInput";
 import { toaster } from "../../../components/ui/toaster";
+import { IconEdit, IconPlus } from "@tabler/icons-react";
 
 type Expense = Doc<"expenses">;
 
@@ -112,13 +114,19 @@ export default function CreateOrEditExpenseDialog(
       {...rest}
     >
       <Dialog.Trigger asChild>
-        <Button
-          variant="surface"
-          colorPalette={props.expense ? "blue" : "green"}
-          size="xs"
-        >
-          {props.expense ? "Edit Expense" : "Add Expense"}
-        </Button>
+        {props.expense ? (
+          <IconButton
+            aria-label="Edit Expense"
+            title="Edit Expense"
+            variant="outline"
+          >
+            <IconEdit />
+          </IconButton>
+        ) : (
+          <Button variant="surface" colorPalette="green" size="xs">
+            Add Expense <IconPlus />
+          </Button>
+        )}
       </Dialog.Trigger>
       <Portal>
         <Dialog.Backdrop />

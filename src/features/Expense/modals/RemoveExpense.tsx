@@ -1,8 +1,15 @@
 "use client";
 
-import { Button, CloseButton, Dialog, Portal } from "@chakra-ui/react";
-import type { Doc } from "../../../../convex/_generated/dataModel";
+import {
+  Button,
+  CloseButton,
+  Dialog,
+  IconButton,
+  Portal,
+} from "@chakra-ui/react";
 import { useMutation } from "convex/react";
+import { IconTrash } from "@tabler/icons-react";
+import type { Doc } from "../../../../convex/_generated/dataModel";
 import { api } from "../../../../convex/_generated/api";
 
 type Expense = Doc<"expenses">;
@@ -29,9 +36,14 @@ export default function RemoveExpenseDialog(props: RemoveExpenseProps) {
       {...rest}
     >
       <Dialog.Trigger asChild>
-        <Button variant="surface" colorPalette="red" size="xs">
-          Delete
-        </Button>
+        <IconButton
+          aria-label="Delete Expense"
+          title="Delete Expense"
+          variant="outline"
+          colorPalette="red"
+        >
+          <IconTrash />
+        </IconButton>
       </Dialog.Trigger>
       <Portal>
         <Dialog.Backdrop />
@@ -41,7 +53,8 @@ export default function RemoveExpenseDialog(props: RemoveExpenseProps) {
               <Dialog.Title>Confirm Deletion</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
-              Are you sure you want to delete the expense "{expense.name}"?
+              Are you sure you want to delete the expense{" "}
+              <b>"{expense.name}"</b>?
             </Dialog.Body>
             <Dialog.Footer>
               <Dialog.ActionTrigger asChild>

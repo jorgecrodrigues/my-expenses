@@ -18,12 +18,18 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 import DuplicateExpenseDialog from "../modals/DuplicateExpense";
 import AvailableYearSelect from "@/shared/components/AvailableYearSelect";
 import AvailableMonthSelect from "@/shared/components/AvailableMonthSelect";
+import useIntersectionObserver from "@/shared/hooks/useIntersectionObserver";
 
 export default function ExpensesList() {
   const [search, setSearch] = React.useState<string>("");
   const [month, setMonth] = React.useState<number[]>([]);
   const [year, setYear] = React.useState<number[]>([]);
   const [perPage] = React.useState<number>(15);
+
+  const { ref, entry } = useIntersectionObserver({
+    threshold: 1.0,
+    rootMargin: "0px",
+  });
 
   const user = useQuery(api.users.viewer);
 
@@ -54,6 +60,12 @@ export default function ExpensesList() {
     setYear(details.value as unknown as number[]);
   };
 
+  React.useEffect(() => {
+    if (entry?.isIntersecting && status === "CanLoadMore") {
+      loadMore(perPage);
+    }
+  }, [entry, status, loadMore, perPage]);
+
   return (
     <React.Fragment>
       <h2>Expenses List</h2>
@@ -79,8 +91,8 @@ export default function ExpensesList() {
             <Table.ColumnHeader>Name</Table.ColumnHeader>
             <Table.ColumnHeader>Description</Table.ColumnHeader>
             <Table.ColumnHeader>Amount</Table.ColumnHeader>
-            <Table.ColumnHeader>Category</Table.ColumnHeader>
             <Table.ColumnHeader>Date (Due date)</Table.ColumnHeader>
+            <Table.ColumnHeader>Category</Table.ColumnHeader>
             <Table.ColumnHeader>Created At</Table.ColumnHeader>
             <Table.ColumnHeader>Actions</Table.ColumnHeader>
           </Table.Row>
@@ -88,9 +100,11 @@ export default function ExpensesList() {
         <Table.Body>
           {results?.map?.((expense) => (
             <Table.Row key={expense._id}>
-              <Table.Cell>{expense?.name ?? "-"}</Table.Cell>
-              <Table.Cell>{expense?.description ?? "-"}</Table.Cell>
-              <Table.Cell>
+              <Table.Cell fontSize="xs">{expense?.name ?? "-"}</Table.Cell>
+              <Table.Cell fontSize="xs" color="gray.500">
+                {expense?.description ?? "-"}
+              </Table.Cell>
+              <Table.Cell fontSize="xs" color="gray.100">
                 {expense?.amount
                   ? expense.amount.toLocaleString("pt-BR", {
                       style: "currency",
@@ -98,20 +112,22 @@ export default function ExpensesList() {
                     })
                   : "-"}
               </Table.Cell>
-              <Table.Cell>{expense?.category ?? "-"}</Table.Cell>
-              <Table.Cell>
+              <Table.Cell fontSize="xs" color="gray.100">
                 {expense?.date
                   ? new Date(expense.date).toLocaleString("pt-BR", {
-                      dateStyle: "long",
+                      dateStyle: "medium",
                       timeStyle: "short",
                     })
                   : "-"}
               </Table.Cell>
-              <Table.Cell>
+              <Table.Cell fontSize="xs" color="gray.500">
+                {expense?.category ?? "-"}
+              </Table.Cell>
+              <Table.Cell fontSize="xs" color="gray.500">
                 {expense?._creationTime
                   ? new Date(expense._creationTime).toLocaleString("pt-BR", {
-                      dateStyle: "long",
-                      timeStyle: "long",
+                      dateStyle: "medium",
+                      timeStyle: "short",
                     })
                   : "-"}
               </Table.Cell>
@@ -129,7 +145,7 @@ export default function ExpensesList() {
             <>
               {Array.from({ length: 50 }).map((_, index) => (
                 <Table.Row key={index}>
-                  {Array.from({ length: 9 }).map((_, cellIndex) => (
+                  {Array.from({ length: 7 }).map((_, cellIndex) => (
                     <Table.Cell key={cellIndex}>
                       <Skeleton variant="shine" height="20px" />
                     </Table.Cell>
@@ -141,7 +157,7 @@ export default function ExpensesList() {
 
           {status === "CanLoadMore" ? (
             <Table.Row>
-              <Table.Cell colSpan={9}>
+              <Table.Cell colSpan={7}>
                 <Button variant="surface" onClick={() => loadMore(perPage)}>
                   Load More
                 </Button>
@@ -151,7 +167,7 @@ export default function ExpensesList() {
 
           {status === "LoadingMore" ? (
             <Table.Row>
-              {Array.from({ length: 10 }).map((_, cellIndex) => (
+              {Array.from({ length: 7 }).map((_, cellIndex) => (
                 <Table.Cell key={cellIndex}>
                   <Skeleton variant="shine" height="20px" />
                 </Table.Cell>
@@ -161,7 +177,7 @@ export default function ExpensesList() {
 
           {status === "Exhausted" ? (
             <Table.Row>
-              <Table.Cell colSpan={9}>
+              <Table.Cell colSpan={7}>
                 <Badge variant="outline" size="md">
                   No more expenses to load.
                 </Badge>
@@ -171,13 +187,15 @@ export default function ExpensesList() {
 
           {results && results.length === 0 ? (
             <Table.Row>
-              <Table.Cell colSpan={9}>
+              <Table.Cell colSpan={7}>
                 No expenses found. Please add a new expense.
               </Table.Cell>
             </Table.Row>
           ) : null}
         </Table.Body>
       </Table.Root>
+
+      <div ref={ref} />
     </React.Fragment>
   );
 }

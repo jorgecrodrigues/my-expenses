@@ -1,5 +1,11 @@
 import { Button, Flex } from "@chakra-ui/react";
 import { useLocation } from "wouter";
+import {
+  IconHome,
+  IconReceipt,
+  IconInfoCircle,
+  IconDashboard,
+} from "@tabler/icons-react";
 
 export default function Sidebar() {
   const [location, navigate] = useLocation();
@@ -20,7 +26,7 @@ export default function Sidebar() {
         fontWeight={location === "/" ? "bold" : "normal"}
         onClick={() => navigate("/")}
       >
-        Home
+        <IconHome /> Home
       </Button>
       <Button
         as="a"
@@ -29,7 +35,7 @@ export default function Sidebar() {
         fontWeight={location === "/dashboard" ? "bold" : "normal"}
         onClick={() => navigate("/dashboard")}
       >
-        Dashboard
+        <IconDashboard /> Dashboard
       </Button>
       <Button
         as="a"
@@ -38,7 +44,7 @@ export default function Sidebar() {
         fontWeight={location === "/expenses" ? "bold" : "normal"}
         onClick={() => navigate("/expenses")}
       >
-        Expenses
+        <IconReceipt /> Expenses
       </Button>
       <Button
         as="a"
@@ -47,7 +53,7 @@ export default function Sidebar() {
         fontWeight={location === "/about" ? "bold" : "normal"}
         onClick={() => navigate("/about")}
       >
-        About
+        <IconInfoCircle /> About
       </Button>
     </Flex>
   );
