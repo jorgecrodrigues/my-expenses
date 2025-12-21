@@ -40,5 +40,13 @@ export default function useIntersectionObserver<T extends HTMLElement = any>(
     [root, rootMargin, threshold]
   );
 
+  React.useEffect(() => {
+    return () => {
+      if (observer.current) {
+        observer.current.disconnect();
+        observer.current = null;
+      }
+    };
+  }, []);
   return { ref, entry };
 }
