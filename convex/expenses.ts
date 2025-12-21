@@ -26,8 +26,7 @@ export const getExpenses = query({
   args: {
     userId: v.id("users"),
     search: v.optional(v.string()),
-    month: v.optional(v.number()),
-    year: v.optional(v.number()),
+    date: v.optional(v.string()),
     orderBy: v.optional(v.union(v.literal("by_amount"), v.literal("by_date"))),
     order: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
     paginationOpts: paginationOptsValidator,
@@ -45,15 +44,26 @@ export const getExpenses = query({
         );
       })
       .filter((q) => {
-        if (!args.month || !args.year) return true;
+        if (!args.date) return true;
+
+        const date = new Date(args.date);
+
         return q.and(
           q.gte(
             q.field("date"),
-            new Date(args.year, args.month - 1, 1).toISOString()
+            new Date(date.getFullYear(), date.getMonth(), 1).toISOString() // Start of the month
           ),
           q.lte(
             q.field("date"),
-            new Date(args.year, args.month, 0, 23, 59, 59, 999).toISOString()
+            new Date( // End of the month
+              date.getFullYear(),
+              date.getMonth() + 1,
+              0,
+              23,
+              59,
+              59,
+              999
+            ).toISOString()
           )
         );
       })

@@ -8,6 +8,7 @@ import {
   Button,
   Flex,
   HStack,
+  IconButton,
   Input,
   Skeleton,
   Table,
@@ -16,14 +17,12 @@ import CreateOrEditExpenseDialog from "../modals/CreateOrEditExpense";
 import RemoveExpenseDialog from "../modals/RemoveExpense";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import DuplicateExpenseDialog from "../modals/DuplicateExpense";
-import AvailableYearSelect from "@/shared/components/AvailableYearSelect";
-import AvailableMonthSelect from "@/shared/components/AvailableMonthSelect";
 import useIntersectionObserver from "@/shared/hooks/useIntersectionObserver";
+import { IconCalendarMinus, IconCalendarPlus } from "@tabler/icons-react";
 
 export default function ExpensesList() {
   const [search, setSearch] = React.useState<string>("");
-  const [month, setMonth] = React.useState<number[]>([]);
-  const [year, setYear] = React.useState<number[]>([]);
+  const [date, setDate] = React.useState<Date | undefined>();
   const [perPage] = React.useState<number>(15);
 
   const { ref, entry } = useIntersectionObserver({
@@ -40,24 +39,19 @@ export default function ExpensesList() {
       orderBy: "by_date",
       order: "desc",
       search,
-      month: month[0] ? Number(month[0]) : undefined,
-      year: year ? Number(year[0]) : undefined,
+      date: date ? date.toISOString() : undefined,
     },
     { initialNumItems: perPage }
   );
 
-  const handleChangeMonth = (details: { value: string[] }) => {
-    if (year.length === 0 && details.value.length > 0) {
-      setYear([new Date().getFullYear() + 10]);
-    }
-    setMonth(details.value as unknown as number[]);
+  const handlePreviousMonth = () => {
+    const d = date ? new Date(date) : new Date();
+    setDate(new Date(d.getFullYear(), d.getMonth() - 1, 1));
   };
 
-  const handleChangeYear = (details: { value: string[] }) => {
-    if (month.length === 0 && details.value.length > 0) {
-      setMonth([new Date().getMonth() + 1]);
-    }
-    setYear(details.value as unknown as number[]);
+  const handleNextMonth = () => {
+    const d = date ? new Date(date) : new Date();
+    setDate(new Date(d.getFullYear(), d.getMonth() + 1, 1));
   };
 
   React.useEffect(() => {
@@ -70,18 +64,40 @@ export default function ExpensesList() {
     <React.Fragment>
       <h2>Expenses List</h2>
       <HStack mb={4} justifyContent="flex-end" alignItems="center" gap={8}>
-        <HStack>
+        <HStack as="form">
           <Input
             size="sm"
-            placeholder="Search expenses..."
             rounded="lg"
+            placeholder="Search expenses..."
             onChange={(e) => setSearch(e.target.value)}
           />
-          <AvailableMonthSelect
-            value={month}
-            onValueChange={handleChangeMonth}
+          <Input
+            type="date"
+            size="sm"
+            rounded="lg"
+            value={date?.toISOString().substring(0, 10) || ""}
+            onChange={(e) =>
+              setDate(e.target.value ? new Date(e.target.value) : undefined)
+            }
           />
-          <AvailableYearSelect value={year} onValueChange={handleChangeYear} />
+          <IconButton
+            aria-label="Go to Previous Month"
+            title="Go to previous Month"
+            variant="ghost"
+            size="sm"
+            onClick={handlePreviousMonth}
+          >
+            <IconCalendarMinus />
+          </IconButton>
+          <IconButton
+            aria-label="Go to Next Month"
+            title="Go to next Month"
+            variant="ghost"
+            size="sm"
+            onClick={handleNextMonth}
+          >
+            <IconCalendarPlus />
+          </IconButton>
         </HStack>
         <CreateOrEditExpenseDialog />
       </HStack>
