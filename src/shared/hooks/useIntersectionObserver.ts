@@ -1,6 +1,6 @@
 import React from "react";
 
-export interface useIntersectionReturnValue<T> {
+export interface IntersectionReturnValue<T> {
   ref: React.RefCallback<T | null>;
   entry: IntersectionObserverEntry | null;
 }
@@ -8,7 +8,7 @@ export interface useIntersectionReturnValue<T> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function useIntersectionObserver<T extends HTMLElement = any>(
   options?: IntersectionObserverInit
-): useIntersectionReturnValue<T> {
+): IntersectionReturnValue<T> {
   const { root, rootMargin, threshold } = options || {};
   const [entry, setEntry] = React.useState<IntersectionObserverEntry | null>(
     null

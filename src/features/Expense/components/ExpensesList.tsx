@@ -8,7 +8,6 @@ import {
   Button,
   Flex,
   HStack,
-  IconButton,
   Input,
   Skeleton,
   Table,
@@ -18,11 +17,10 @@ import RemoveExpenseDialog from "../modals/RemoveExpense";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import DuplicateExpenseDialog from "../modals/DuplicateExpense";
 import useIntersectionObserver from "@/shared/hooks/useIntersectionObserver";
-import { IconCalendarMinus, IconCalendarPlus } from "@tabler/icons-react";
 
 export default function ExpensesList() {
   const [search, setSearch] = React.useState<string>("");
-  const [date, setDate] = React.useState<Date | undefined>();
+  const [date, setDate] = React.useState<string | undefined>();
   const [perPage] = React.useState<number>(15);
 
   const { ref, entry } = useIntersectionObserver({
@@ -39,32 +37,22 @@ export default function ExpensesList() {
       orderBy: "by_date",
       order: "desc",
       search,
-      date: date ? date.toISOString() : undefined,
+      date: date,
     },
     { initialNumItems: perPage }
   );
-
-  const handlePreviousMonth = () => {
-    const d = date ? new Date(date) : new Date();
-    setDate(new Date(d.getFullYear(), d.getMonth() - 1, 1));
-  };
-
-  const handleNextMonth = () => {
-    const d = date ? new Date(date) : new Date();
-    setDate(new Date(d.getFullYear(), d.getMonth() + 1, 1));
-  };
 
   React.useEffect(() => {
     if (entry?.isIntersecting && status === "CanLoadMore") {
       loadMore(perPage);
     }
-  }, [entry, status, loadMore, perPage]);
+  }, [entry?.isIntersecting, status, loadMore, perPage]);
 
   return (
     <React.Fragment>
       <h2>Expenses List</h2>
       <HStack mb={4} justifyContent="flex-end" alignItems="center" gap={8}>
-        <HStack as="form">
+        <HStack>
           <Input
             size="sm"
             rounded="lg"
@@ -75,45 +63,9 @@ export default function ExpensesList() {
             type="date"
             size="sm"
             rounded="lg"
-            value={
-              date
-                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-                    2,
-                    "0"
-                  )}-${String(date.getDate()).padStart(2, "0")}`
-                : ""
-            }
-            onChange={(e) => {
-              const value = e.target.value;
-              if (!value) {
-                setDate(undefined);
-                return;
-              }
-              const [yearStr, monthStr, dayStr] = value.split("-");
-              const year = Number(yearStr);
-              const month = Number(monthStr);
-              const day = Number(dayStr);
-              setDate(new Date(year, month - 1, day));
-            }}
+            value={date || ""}
+            onChange={(e) => setDate(e.target.value)}
           />
-          <IconButton
-            aria-label="Go to Previous Month"
-            title="Go to previous Month"
-            variant="ghost"
-            size="sm"
-            onClick={handlePreviousMonth}
-          >
-            <IconCalendarMinus />
-          </IconButton>
-          <IconButton
-            aria-label="Go to Next Month"
-            title="Go to next Month"
-            variant="ghost"
-            size="sm"
-            onClick={handleNextMonth}
-          >
-            <IconCalendarPlus />
-          </IconButton>
         </HStack>
         <CreateOrEditExpenseDialog />
       </HStack>
