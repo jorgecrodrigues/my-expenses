@@ -75,10 +75,26 @@ export default function ExpensesList() {
             type="date"
             size="sm"
             rounded="lg"
-            value={date?.toISOString().substring(0, 10) || ""}
-            onChange={(e) =>
-              setDate(e.target.value ? new Date(e.target.value) : undefined)
+            value={
+              date
+                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+                    2,
+                    "0"
+                  )}-${String(date.getDate()).padStart(2, "0")}`
+                : ""
             }
+            onChange={(e) => {
+              const value = e.target.value;
+              if (!value) {
+                setDate(undefined);
+                return;
+              }
+              const [yearStr, monthStr, dayStr] = value.split("-");
+              const year = Number(yearStr);
+              const month = Number(monthStr);
+              const day = Number(dayStr);
+              setDate(new Date(year, month - 1, day));
+            }}
           />
           <IconButton
             aria-label="Go to Previous Month"
