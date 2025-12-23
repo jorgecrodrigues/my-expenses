@@ -49,20 +49,17 @@ export default function ExpensesList() {
   }, [entry?.isIntersecting, status, loadMore, perPage]);
 
   return (
-    <React.Fragment>
-      <h2>Expenses List</h2>
+    <>
       <HStack mb={4} justifyContent="flex-end" alignItems="center" gap={8}>
         <HStack>
           <Input
-            size="sm"
-            rounded="lg"
+            variant="outline"
             placeholder="Search expenses..."
             onChange={(e) => setSearch(e.target.value)}
           />
           <Input
             type="date"
-            size="sm"
-            rounded="lg"
+            variant="outline"
             value={date || ""}
             onChange={(e) => setDate(e.target.value)}
           />
@@ -180,6 +177,6 @@ export default function ExpensesList() {
       </Table.Root>
 
       <div ref={ref} />
-    </React.Fragment>
+    </>
   );
 }

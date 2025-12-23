@@ -1,10 +1,14 @@
-import React from "react";
 import ExpensesList from "../components/ExpensesList";
+import { VStack, Heading, Text } from "@chakra-ui/react";
 
 export default function ExpensePage() {
   return (
-    <React.Fragment>
+    <>
+      <VStack mb={4} align="flex-start" gap="md">
+        <Heading>Expense List</Heading>
+        <Text>Manage and track your expenses efficiently.</Text>
+      </VStack>
       <ExpensesList />
-    </React.Fragment>
+    </>
   );
 }

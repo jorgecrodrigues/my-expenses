@@ -1,6 +1,5 @@
 import {
   Avatar,
-  Flex,
   Text,
   HStack,
   Popover,
@@ -10,6 +9,7 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { BrandIcon } from "./icons/BrandIcon";
 
 export default function Header() {
   const { signOut } = useAuthActions();
@@ -17,7 +17,20 @@ export default function Header() {
   const user = useQuery(api.users.viewer);
 
   return (
-    <Flex px={2} py={2} borderBottomWidth={1} justify="flex-end" align="center">
+    <HStack
+      px={2}
+      py={2}
+      backgroundColor="blackAlpha.900"
+      borderBottomWidth={1}
+      justify="space-between"
+      align="center"
+    >
+      <HStack>
+        <BrandIcon boxSize={10} />
+        <Text fontSize="lg" fontWeight="bold" color="white">
+          My Expense Tracker
+        </Text>
+      </HStack>
       <Popover.Root>
         <Popover.Trigger asChild>
           <Button variant="plain" pr={0}>
@@ -60,6 +73,6 @@ export default function Header() {
           </Popover.Positioner>
         </Portal>
       </Popover.Root>
-    </Flex>
+    </HStack>
   );
 }

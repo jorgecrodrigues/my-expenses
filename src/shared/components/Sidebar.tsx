@@ -1,4 +1,4 @@
-import { Button, Flex } from "@chakra-ui/react";
+import { Button, VStack } from "@chakra-ui/react";
 import { useLocation } from "wouter";
 import {
   IconHome,
@@ -11,9 +11,10 @@ export default function Sidebar() {
   const [location, navigate] = useLocation();
 
   return (
-    <Flex
+    <VStack
+      py={4}
       minHeight="100%"
-      direction="column"
+      align="flex-start"
       borderRightWidth={{
         base: 0,
         md: 1,
@@ -21,8 +22,10 @@ export default function Sidebar() {
     >
       <Button
         as="a"
-        variant="ghost"
-        justifyContent="flex-start"
+        variant="plain"
+        size="lg"
+        color="white"
+        _hover={{ color: "blue.400" }}
         fontWeight={location === "/" ? "bold" : "normal"}
         onClick={() => navigate("/")}
       >
@@ -31,7 +34,9 @@ export default function Sidebar() {
       <Button
         as="a"
         variant="ghost"
-        justifyContent="flex-start"
+        size="lg"
+        color="white"
+        _hover={{ color: "blue.400" }}
         fontWeight={location === "/dashboard" ? "bold" : "normal"}
         onClick={() => navigate("/dashboard")}
       >
@@ -40,7 +45,9 @@ export default function Sidebar() {
       <Button
         as="a"
         variant="ghost"
-        justifyContent="flex-start"
+        size="lg"
+        color="white"
+        _hover={{ color: "blue.400" }}
         fontWeight={location === "/expenses" ? "bold" : "normal"}
         onClick={() => navigate("/expenses")}
       >
@@ -49,12 +56,14 @@ export default function Sidebar() {
       <Button
         as="a"
         variant="ghost"
-        justifyContent="flex-start"
+        size="lg"
+        color="white"
+        _hover={{ color: "blue.400" }}
         fontWeight={location === "/about" ? "bold" : "normal"}
         onClick={() => navigate("/about")}
       >
         <IconInfoCircle /> About
       </Button>
-    </Flex>
+    </VStack>
   );
 }
