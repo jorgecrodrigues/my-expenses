@@ -1,5 +1,7 @@
-import { Button, Center, VStack } from "@chakra-ui/react";
+import { BrandIcon } from "@/shared/components/icons/BrandIcon";
+import { Button, Center, HStack, VStack, Text } from "@chakra-ui/react";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { IconBrandGithub } from "@tabler/icons-react";
 
 export default function SignIn() {
   const { signIn } = useAuthActions();
@@ -7,9 +9,14 @@ export default function SignIn() {
   return (
     <Center height="100vh">
       <VStack spaceY={4}>
-        <h2>Sign In</h2>
+        <HStack spaceX={4}>
+          <BrandIcon boxSize={20} />
+          <Text fontSize={35} fontWeight={700} color="#73D14F">
+            My Expense Tracker
+          </Text>
+        </HStack>
         <Button variant="surface" onClick={() => signIn("github")}>
-          Sign in with GitHub
+          Sign in with GitHub <IconBrandGithub />
         </Button>
       </VStack>
     </Center>

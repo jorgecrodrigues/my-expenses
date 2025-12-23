@@ -118,12 +118,12 @@ export default function CreateOrEditExpenseDialog(
           <IconButton
             aria-label="Edit Expense"
             title="Edit Expense"
-            variant="outline"
+            variant="ghost"
           >
             <IconEdit />
           </IconButton>
         ) : (
-          <Button variant="surface" colorPalette="green" size="xs">
+          <Button variant="surface" colorPalette="green" size="sm">
             Add Expense <IconPlus />
           </Button>
         )}

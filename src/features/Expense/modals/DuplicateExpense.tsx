@@ -113,7 +113,7 @@ export default function DuplicateExpenseDialog(props: DuplicateExpenseProps) {
         <IconButton
           aria-label="Duplicate Expense"
           title="Duplicate Expense"
-          variant="outline"
+          variant="ghost"
         >
           <IconCopyPlusFilled />
         </IconButton>

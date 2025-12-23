@@ -39,7 +39,7 @@ export default function RemoveExpenseDialog(props: RemoveExpenseProps) {
         <IconButton
           aria-label="Delete Expense"
           title="Delete Expense"
-          variant="outline"
+          variant="ghost"
           colorPalette="red"
         >
           <IconTrash />
