@@ -23,7 +23,7 @@ export default function DashboardPage() {
     const month = params.month ? parseInt(params.month, 10) - 1 : undefined;
     const year = params.year ? parseInt(params.year) : undefined;
 
-    if (!month || !year) {
+    if (month === undefined || year === undefined) {
       return new Date();
     }
 
@@ -33,9 +33,13 @@ export default function DashboardPage() {
   const [, setLocation] = useLocation();
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const date = new Date(e.target.value);
+    const selectedDate = new Date(e.target.value);
+    if (isNaN(selectedDate.getTime())) {
+      setLocation(`/dashboard`);
+      return;
+    }
     setLocation(
-      `/dashboard/month/${date.getMonth() + 1}/year/${date.getFullYear()}`
+      `/dashboard/month/${selectedDate.getMonth() + 1}/year/${selectedDate.getFullYear()}`
     );
   };
 
@@ -68,10 +72,20 @@ export default function DashboardPage() {
         <Text>Welcome to the Dashboard!</Text>
       </VStack>
       <HStack mb={4} align="flex-end" justify="flex-end">
-        <IconButton variant="outline" onClick={handlePreviousMonth}>
+        <IconButton
+          aria-label="Previous Month"
+          title="Previous Month"
+          variant="outline"
+          onClick={handlePreviousMonth}
+        >
           <IconCalendarMinus />
         </IconButton>
-        <IconButton variant="outline" onClick={handleNextMonth}>
+        <IconButton
+          aria-label="Next Month"
+          title="Next Month"
+          variant="outline"
+          onClick={handleNextMonth}
+        >
           <IconCalendarPlus />
         </IconButton>
         <Input
@@ -80,7 +94,12 @@ export default function DashboardPage() {
           value={date.toISOString().slice(0, 10)}
           onChange={handleDateChange}
         />
-        <IconButton variant="outline" onClick={() => setLocation("/dashboard")}>
+        <IconButton
+          aria-label="All Time"
+          title="All Time"
+          variant="outline"
+          onClick={() => setLocation("/dashboard")}
+        >
           <IconCalendarMonth />
         </IconButton>
       </HStack>
