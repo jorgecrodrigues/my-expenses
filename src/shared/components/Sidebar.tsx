@@ -14,6 +14,7 @@ export default function Sidebar() {
     <VStack
       py={4}
       minHeight="100%"
+      backgroundColor="blackAlpha.900"
       align="flex-start"
       borderRightWidth={{
         base: 0,
