@@ -14,7 +14,7 @@ export default function Sidebar() {
     <VStack
       py={4}
       minHeight="100%"
-      backgroundColor="blackAlpha.900"
+      backgroundColor="bg.panel"
       align="flex-start"
       borderRightWidth={{
         base: 0,
@@ -25,7 +25,7 @@ export default function Sidebar() {
         as="a"
         variant="plain"
         size="lg"
-        color="white"
+        color="fg"
         _hover={{ color: "blue.400" }}
         fontWeight={location === "/" ? "bold" : "normal"}
         onClick={() => navigate("/")}
@@ -36,7 +36,7 @@ export default function Sidebar() {
         as="a"
         variant="ghost"
         size="lg"
-        color="white"
+        color="fg"
         _hover={{ color: "blue.400" }}
         fontWeight={location === "/dashboard" ? "bold" : "normal"}
         onClick={() => navigate("/dashboard")}
@@ -47,7 +47,7 @@ export default function Sidebar() {
         as="a"
         variant="ghost"
         size="lg"
-        color="white"
+        color="fg"
         _hover={{ color: "blue.400" }}
         fontWeight={location === "/expenses" ? "bold" : "normal"}
         onClick={() => navigate("/expenses")}
@@ -58,7 +58,7 @@ export default function Sidebar() {
         as="a"
         variant="ghost"
         size="lg"
-        color="white"
+        color="fg"
         _hover={{ color: "blue.400" }}
         fontWeight={location === "/about" ? "bold" : "normal"}
         onClick={() => navigate("/about")}

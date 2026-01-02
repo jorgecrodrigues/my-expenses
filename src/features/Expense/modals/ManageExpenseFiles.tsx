@@ -6,8 +6,10 @@ import {
   Button,
   CloseButton,
   Dialog,
+  Editable,
   FileUpload,
   FormatByte,
+  HStack,
   Icon,
   IconButton,
   Popover,
@@ -15,10 +17,12 @@ import {
   Table,
   Text,
   useFileUpload,
+  useFileUploadContext,
   VStack,
 } from "@chakra-ui/react";
 import {
   IconArchiveFilled,
+  IconDownload,
   IconFiles,
   IconTrash,
   IconUpload,
@@ -27,6 +31,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 
 type Expense = Doc<"expenses">;
+type ExpenseFile = Doc<"expensesFiles">;
 interface ManageExpenseFilesProps {
   expense: Expense;
 }
@@ -39,10 +44,12 @@ export default function ManageExpenseFiles({
 
   const [loading, setLoading] = React.useState<boolean>(false);
 
-  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
-  const sendFile = useMutation(api.files.sendFile);
+  const generateUploadUrl = useMutation(api.expensesfiles.generateUploadUrl);
+  const sendFile = useMutation(api.expensesfiles.sendFile);
 
-  const files = useQuery(api.files.getFiles, { expenseId: expense._id });
+  const files = useQuery(api.expensesfiles.getExpenseFiles, {
+    expenseId: expense._id,
+  });
 
   const fileUpload = useFileUpload({
     maxFiles: 1,
@@ -53,33 +60,35 @@ export default function ManageExpenseFiles({
   const handleSendFiles = React.useCallback(
     async (e: React.FormEvent<HTMLButtonElement>) => {
       e.preventDefault();
-
-      setLoading(true);
-
-      // Step 1: Get a short-lived upload URL from the server
-      const postUrl = await generateUploadUrl();
-
-      // Step 2: POST the file to the upload URL obtained from the server
-      const result = await fetch(postUrl, {
-        method: "POST",
-        headers: { "Content-Type": fileUpload.acceptedFiles[0].type },
-        body: fileUpload.acceptedFiles[0],
-      });
-
-      // Step 3: Save the newly allocated storage ID in the database
-      const { storageId } = await result.json();
-
-      await sendFile({
-        storageId,
-        userId: expense.userId,
-        expenseId: expense._id,
-        contentType: fileUpload.acceptedFiles[0].type,
-        filename: fileUpload.acceptedFiles[0].name,
-        size: fileUpload.acceptedFiles[0].size,
-      });
-
-      setLoading(false);
-      fileUpload.clearFiles();
+      try {
+        setLoading(true);
+        // Step 1: Get a short-lived upload URL from the server
+        const postUrl = await generateUploadUrl();
+        // Step 2: POST the file to the upload URL obtained from the server
+        const result = await fetch(postUrl, {
+          method: "POST",
+          headers: { "Content-Type": fileUpload.acceptedFiles[0].type },
+          body: fileUpload.acceptedFiles[0],
+        });
+        // Step 3: Save the newly allocated storage ID in the database
+        const { storageId } = await result.json();
+        // Step 4: Inform the server about the new file associated with the expense
+        await sendFile({
+          storageId,
+          userId: expense.userId,
+          expenseId: expense._id,
+          contentType: fileUpload.acceptedFiles[0].type,
+          filename: fileUpload.acceptedFiles[0].name,
+          size: fileUpload.acceptedFiles[0].size,
+        });
+        // Step 5: Clear the file input and loading state
+        setLoading(false);
+        fileUpload.clearFiles();
+      } catch (error) {
+        throw new Error("Failed to upload file.", { cause: error });
+      } finally {
+        setLoading(false);
+      }
     },
     [expense, fileUpload, generateUploadUrl, sendFile]
   );
@@ -99,12 +108,13 @@ export default function ManageExpenseFiles({
           aria-label="Manage Expense Files"
           title="Manage Expense Files"
           variant="ghost"
+          colorPalette="blue"
         >
           <IconArchiveFilled />
         </IconButton>
       </Dialog.Trigger>
       <Portal>
-        <Dialog.Backdrop />
+        <Dialog.Backdrop bg="blackAlpha.800" />
         <Dialog.Positioner>
           <Dialog.Content>
             <Dialog.Header>
@@ -131,7 +141,7 @@ export default function ManageExpenseFiles({
                       <IconFiles /> Select Files to Upload
                     </Button>
                   </FileUpload.Trigger>
-                  <FileUpload.List />
+                  <FileUploadList />
                 </FileUpload.RootProvider>
                 <Button
                   variant="solid"
@@ -175,13 +185,16 @@ export default function ManageExpenseFiles({
                         })}
                       </Table.Cell>
                       <Table.Cell fontSize="xs" color="gray.500">
-                        <DeleteFile fileId={file._id} />
+                        <HStack>
+                          <DownloadFile file={file} />
+                          <DeleteFile file={file} />
+                        </HStack>
                       </Table.Cell>
                     </Table.Row>
                   ))}
                   {files?.length === 0 && (
                     <Table.Row>
-                      <Table.Cell colSpan={5} textAlign="center">
+                      <Table.Cell colSpan={5}>
                         No files uploaded for this expense.
                       </Table.Cell>
                     </Table.Row>
@@ -199,11 +212,111 @@ export default function ManageExpenseFiles({
   );
 }
 
-function DeleteFile(props: { fileId: Id<"files"> }) {
+function FileUploadList() {
+  const fileUpload = useFileUploadContext();
+
+  const files = fileUpload.acceptedFiles;
+
+  const handleChangeFileName = React.useCallback(
+    (file: File, name: string) => {
+      fileUpload.setFiles(
+        fileUpload.acceptedFiles.map((f) =>
+          f === file ? new File([f], name, { type: f.type }) : f
+        )
+      );
+    },
+    [fileUpload]
+  );
+
+  if (files.length === 0) return null;
+  return (
+    <FileUpload.ItemGroup>
+      {files.map((file) => (
+        <FileUpload.Item key={file.name} file={file}>
+          <Editable.Root
+            defaultValue={file.name}
+            onValueCommit={({ value }) => handleChangeFileName(file, value)}
+          >
+            <Editable.Preview />
+            <Editable.Input />
+          </Editable.Root>
+          <FileUpload.ItemSizeText whiteSpace="nowrap" />
+          <FileUpload.ItemDeleteTrigger alignSelf="center" asChild>
+            <IconButton
+              aria-label="Remove File"
+              title="Remove File"
+              variant="plain"
+              size="sm"
+            >
+              <IconTrash />
+            </IconButton>
+          </FileUpload.ItemDeleteTrigger>
+        </FileUpload.Item>
+      ))}
+    </FileUpload.ItemGroup>
+  );
+}
+
+interface DownloadFileProps {
+  file: ExpenseFile;
+}
+function DownloadFile(props: DownloadFileProps) {
   const [loading, setLoading] = React.useState<boolean>(false);
-  const deleteFile = useMutation(api.files.deleteFile);
+  const url = useQuery(api.expensesfiles.getUrl, {
+    storageId: props.file.storageId,
+  });
+
+  const handleDownload = React.useCallback(async () => {
+    if (!url) return;
+
+    let blobUrl: string | null = null;
+
+    try {
+      setLoading(true);
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = props.file.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Failed to download file:", error);
+    } finally {
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
+      setLoading(false);
+    }
+  }, [url, props.file.filename]);
+
+  return (
+    <IconButton
+      variant="plain"
+      onClick={handleDownload}
+      loading={loading}
+      disabled={!url || loading}
+    >
+      <IconDownload />
+    </IconButton>
+  );
+}
+
+interface DeleteFileProps {
+  file: ExpenseFile;
+}
+function DeleteFile(props: DeleteFileProps) {
+  const [loading, setLoading] = React.useState<boolean>(false);
+  const deleteFile = useMutation(api.expensesfiles.deleteExpenseFile);
   const handleDeleteFile = React.useCallback(
-    async (fileId: Id<"files">) => {
+    async (fileId: Id<"expensesFiles">) => {
       try {
         setLoading(true);
         await deleteFile({ fileId });
@@ -216,12 +329,20 @@ function DeleteFile(props: { fileId: Id<"files"> }) {
     [deleteFile]
   );
   return (
-    <Popover.Root>
+    <Popover.Root
+      positioning={{
+        placement: "top-end",
+        offset: {
+          crossAxis: 0,
+          mainAxis: 0,
+        },
+      }}
+    >
       <Popover.Trigger asChild>
         <IconButton
           aria-label="Delete File"
           title="Delete File"
-          variant="ghost"
+          variant="plain"
           colorPalette="red"
         >
           <IconTrash />
@@ -233,14 +354,14 @@ function DeleteFile(props: { fileId: Id<"files"> }) {
           <Popover.Arrow>
             <Popover.ArrowTip />
           </Popover.Arrow>
-          <Popover.Body>
+          <Popover.Body px={4} py={4}>
             <VStack align="stretch">
               <Text>Are you sure you want to delete this file?</Text>
               <Button
                 variant="surface"
                 colorPalette="red"
                 loading={loading}
-                onClick={() => handleDeleteFile(props.fileId)}
+                onClick={() => handleDeleteFile(props.file._id)}
               >
                 <IconTrash />
                 Delete File

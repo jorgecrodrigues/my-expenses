@@ -20,14 +20,14 @@ export default function Header() {
     <HStack
       px={2}
       py={2}
-      backgroundColor="blackAlpha.900"
+      backgroundColor="bg.panel"
       borderBottomWidth={1}
       justify="space-between"
       align="center"
     >
       <HStack>
         <BrandIcon boxSize={10} />
-        <Text fontSize="lg" fontWeight="bold" color="white">
+        <Text fontSize="lg" fontWeight="bold" color="fg.muted">
           My Expense Tracker
         </Text>
       </HStack>

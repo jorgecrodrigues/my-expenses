@@ -30,16 +30,43 @@ export const sendFile = mutation({
     contentType: v.string(),
     filename: v.string(),
     size: v.number(),
+    type: v.optional(
+      v.union(v.literal("invoice"), v.literal("receipt"), v.literal("other"))
+    ),
   },
   handler: async (ctx, args) => {
-    await ctx.db.insert("files", {
+    await ctx.db.insert("expensesFiles", {
       userId: args.userId,
       expenseId: args.expenseId,
       storageId: args.storageId,
       contentType: args.contentType,
       filename: args.filename,
       size: args.size,
+      type: args.type,
     });
+  },
+});
+
+/**
+ * Retrieves metadata for a specific file stored in the system.
+ *
+ * @param storageId - The ID of the file in storage.
+ */
+export const getMetadata = query({
+  args: {
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.system.get("_storage", args.storageId);
+  },
+});
+
+export const getUrl = query({
+  args: {
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.storage.getUrl(args.storageId);
   },
 });
 
@@ -48,13 +75,13 @@ export const sendFile = mutation({
  *
  * @param expenseId - The ID of the expense.
  */
-export const getFiles = query({
+export const getExpenseFiles = query({
   args: {
     expenseId: v.id("expenses"),
   },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("files")
+      .query("expensesFiles")
       .filter((q) => q.eq(q.field("expenseId"), args.expenseId))
       .collect();
   },
@@ -65,13 +92,13 @@ export const getFiles = query({
  *
  * @param fileId - The ID of the file to delete.
  */
-export const deleteFile = mutation({
+export const deleteExpenseFile = mutation({
   args: {
-    fileId: v.id("files"),
+    fileId: v.id("expensesFiles"),
   },
   handler: async (ctx, args) => {
     // First, retrieve the file record to get the storageId
-    const file = await ctx.db.get("files", args.fileId);
+    const file = await ctx.db.get("expensesFiles", args.fileId);
     if (!file) {
       throw new Error("File not found");
     }
@@ -80,6 +107,6 @@ export const deleteFile = mutation({
     await ctx.storage.delete(file.storageId);
 
     // Delete the file record from the database
-    await ctx.db.delete("files", args.fileId);
+    await ctx.db.delete("expensesFiles", args.fileId);
   },
 });
