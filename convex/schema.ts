@@ -33,4 +33,12 @@ export default defineSchema({
   })
     .index("by_amount", ["amount"])
     .index("by_date", ["date"]),
+  files: defineTable({
+    userId: v.id("users"),
+    expenseId: v.id("expenses"),
+    storageId: v.id("_storage"),
+    filename: v.string(),
+    contentType: v.string(),
+    size: v.number(),
+  }).index("by_filename", ["filename"]),
 });

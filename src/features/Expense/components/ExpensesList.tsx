@@ -17,6 +17,7 @@ import RemoveExpenseDialog from "../modals/RemoveExpense";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import DuplicateExpenseDialog from "../modals/DuplicateExpense";
 import useIntersectionObserver from "@/shared/hooks/useIntersectionObserver";
+import ManageExpenseFiles from "../modals/ManageExpenseFiles";
 
 export default function ExpensesList() {
   const [search, setSearch] = React.useState<string>("");
@@ -115,6 +116,7 @@ export default function ExpensesList() {
               <Table.Cell>
                 <Flex gap={2}>
                   <DuplicateExpenseDialog expense={expense} />
+                  <ManageExpenseFiles expense={expense} />
                   <CreateOrEditExpenseDialog expense={expense} />
                   <RemoveExpenseDialog expense={expense} />
                 </Flex>
