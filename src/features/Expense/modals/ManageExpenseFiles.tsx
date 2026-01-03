@@ -64,26 +64,31 @@ export default function ManageExpenseFiles({
         setLoading(true);
         // Step 1: Get a short-lived upload URL from the server
         const postUrl = await generateUploadUrl();
-        // Multiple files upload logic can be added here
-        fileUpload.acceptedFiles.forEach(async (file) => {
-          // Step 2: POST the file to the upload URL obtained from the server
-          const result = await fetch(postUrl, {
-            method: "POST",
-            headers: { "Content-Type": file.type },
-            body: file,
-          });
-          // Step 3: Save the newly allocated storage ID in the database
-          const { storageId } = await result.json();
-          // Step 4: Inform the server about the new file associated with the expense
-          await sendFile({
-            storageId,
-            userId: expense.userId,
-            expenseId: expense._id,
-            contentType: file.type,
-            filename: file.name,
-            size: file.size,
-          });
-        });
+        // Step 2-4: Upload all files in parallel and wait for completion
+        await Promise.all(
+          fileUpload.acceptedFiles.map(async (file) => {
+            // Step 2: POST the file to the upload URL obtained from the server
+            const result = await fetch(postUrl, {
+              method: "POST",
+              headers: { "Content-Type": file.type },
+              body: file,
+            });
+            if (!result.ok) {
+              throw new Error(`Upload failed: ${result.statusText}`);
+            }
+            // Step 3: Save the newly allocated storage ID in the database
+            const { storageId } = await result.json();
+            // Step 4: Inform the server about the new file associated with the expense
+            await sendFile({
+              storageId,
+              userId: expense.userId,
+              expenseId: expense._id,
+              contentType: file.type,
+              filename: file.name,
+              size: file.size,
+            });
+          })
+        );
       } catch (error) {
         // Handle errors appropriately
         throw new Error("Failed to upload file.", { cause: error });
