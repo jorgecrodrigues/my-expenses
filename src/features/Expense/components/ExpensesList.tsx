@@ -88,10 +88,10 @@ export default function ExpensesList() {
           {results?.map?.((expense) => (
             <Table.Row key={expense._id}>
               <Table.Cell fontSize="xs">{expense?.name ?? "-"}</Table.Cell>
-              <Table.Cell fontSize="xs" color="gray.500">
+              <Table.Cell fontSize="xs" color="fg.subtle">
                 {expense?.description ?? "-"}
               </Table.Cell>
-              <Table.Cell fontSize="xs" color="gray.100">
+              <Table.Cell fontSize="xs" color="fg.subtle">
                 {expense?.amount
                   ? expense.amount.toLocaleString("pt-BR", {
                       style: "currency",
@@ -99,20 +99,33 @@ export default function ExpensesList() {
                     })
                   : "-"}
               </Table.Cell>
-              <Table.Cell fontSize="xs" color="gray.100" whiteSpace="nowrap">
-                {expense?.date
-                  ? new Date(expense.date).toLocaleString("pt-BR", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })
-                  : "-"}
+              <Table.Cell
+                title={
+                  new Date(expense.date) < new Date()
+                    ? "This expense is overdue"
+                    : "This expense is not overdue"
+                }
+                fontSize="xs"
+                color={
+                  expense.paidAt
+                    ? "fg.subtle"
+                    : new Date(expense.date) < new Date()
+                      ? "fg.error"
+                      : "fg.subtle"
+                }
+                whiteSpace="nowrap"
+              >
+                {new Date(expense.date).toLocaleString("pt-BR", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
               </Table.Cell>
-              <Table.Cell fontSize="xs" color="gray.500">
+              <Table.Cell fontSize="xs" color="fg.subtle">
                 {expense?.category ?? "-"}
               </Table.Cell>
               <Table.Cell
                 fontSize="xs"
-                color={expense?.paidAt ? "green.400" : "gray.400"}
+                color={expense?.paidAt ? "fg.success" : "fg.subtle"}
               >
                 {expense?.paidAt
                   ? new Date(expense.paidAt).toLocaleString("pt-BR", {
@@ -121,7 +134,7 @@ export default function ExpensesList() {
                     })
                   : "-"}
               </Table.Cell>
-              <Table.Cell fontSize="xs" color="gray.500">
+              <Table.Cell fontSize="xs" color="fg.subtle">
                 {expense?._creationTime
                   ? new Date(expense._creationTime).toLocaleString("pt-BR", {
                       dateStyle: "medium",
