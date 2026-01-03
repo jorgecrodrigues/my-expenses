@@ -110,7 +110,10 @@ export default function ExpensesList() {
               <Table.Cell fontSize="xs" color="gray.500">
                 {expense?.category ?? "-"}
               </Table.Cell>
-              <Table.Cell fontSize="xs" color="gray.500">
+              <Table.Cell
+                fontSize="xs"
+                color={expense?.paidAt ? "green.400" : "gray.400"}
+              >
                 {expense?.paidAt
                   ? new Date(expense.paidAt).toLocaleString("pt-BR", {
                       dateStyle: "medium",
