@@ -150,7 +150,7 @@ export default function ExpensesList() {
                     </Table.Cell>
                   ))}
                   <Table.Cell>
-                    <HStack gap={4}>
+                    <HStack gap={7}>
                       <SkeletonCircle size={6} />
                       <SkeletonCircle size={6} />
                       <SkeletonCircle size={6} />
@@ -164,7 +164,7 @@ export default function ExpensesList() {
 
           {status === "CanLoadMore" ? (
             <Table.Row>
-              <Table.Cell colSpan={7}>
+              <Table.Cell colSpan={8}>
                 <Button variant="surface" onClick={() => loadMore(perPage)}>
                   Load More
                 </Button>
@@ -179,12 +179,20 @@ export default function ExpensesList() {
                   <Skeleton variant="shine" height="20px" />
                 </Table.Cell>
               ))}
+              <Table.Cell>
+                <HStack gap={7}>
+                  <SkeletonCircle size={6} />
+                  <SkeletonCircle size={6} />
+                  <SkeletonCircle size={6} />
+                  <SkeletonCircle size={6} />
+                </HStack>
+              </Table.Cell>
             </Table.Row>
           ) : null}
 
           {status === "Exhausted" ? (
             <Table.Row>
-              <Table.Cell colSpan={7}>
+              <Table.Cell colSpan={8}>
                 <Badge variant="outline" size="md">
                   No more expenses to load.
                 </Badge>
@@ -194,7 +202,7 @@ export default function ExpensesList() {
 
           {results && results.length === 0 ? (
             <Table.Row>
-              <Table.Cell colSpan={7}>
+              <Table.Cell colSpan={8}>
                 No expenses found. Please add a new expense.
               </Table.Cell>
             </Table.Row>
