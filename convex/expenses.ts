@@ -209,6 +209,7 @@ export const addExpense = mutation({
       amount: args.amount,
       category: args.category,
       date: args.date,
+      paidAt: args.paidAt,
     });
     return expenseId;
   },
@@ -284,6 +285,7 @@ export const updateExpense = mutation({
       amount: args.amount,
       category: args.category,
       date: args.date,
+      paidAt: args.paidAt,
     });
   },
 });

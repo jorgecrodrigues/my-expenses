@@ -155,6 +155,7 @@ export default function CreateOrEditExpenseDialog(
                 </Field.HelperText>
                 <Field.ErrorText />
               </Field.Root>
+
               <Field.Root>
                 <Field.Label>
                   Description
@@ -231,14 +232,13 @@ export default function CreateOrEditExpenseDialog(
                   </Field.Label>
                   <Input
                     type="datetime-local"
-                    name="date"
+                    name="paidAt"
                     placeholder="Enter date"
                     defaultValue={
                       expense?.paidAt
                         ? new Date(expense.paidAt).toISOString().slice(0, 16)
                         : ""
                     }
-                    required
                   />
                   <Field.HelperText>
                     Please enter the paid at date.

@@ -10,6 +10,7 @@ import {
   HStack,
   Input,
   Skeleton,
+  SkeletonCircle,
   Table,
 } from "@chakra-ui/react";
 import CreateOrEditExpenseDialog from "../modals/CreateOrEditExpense";
@@ -73,10 +74,15 @@ export default function ExpensesList() {
             <Table.ColumnHeader>Name</Table.ColumnHeader>
             <Table.ColumnHeader>Description</Table.ColumnHeader>
             <Table.ColumnHeader>Amount</Table.ColumnHeader>
-            <Table.ColumnHeader>Date (Due date)</Table.ColumnHeader>
+            <Table.ColumnHeader whiteSpace="nowrap">
+              Date (Due date)
+            </Table.ColumnHeader>
             <Table.ColumnHeader>Category</Table.ColumnHeader>
-            <Table.ColumnHeader>Created At</Table.ColumnHeader>
-            <Table.ColumnHeader>Actions</Table.ColumnHeader>
+            <Table.ColumnHeader whiteSpace="nowrap">Paid At</Table.ColumnHeader>
+            <Table.ColumnHeader whiteSpace="nowrap">
+              Created At
+            </Table.ColumnHeader>
+            <Table.ColumnHeader w="1%">Actions</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -94,7 +100,7 @@ export default function ExpensesList() {
                     })
                   : "-"}
               </Table.Cell>
-              <Table.Cell fontSize="xs" color="gray.100">
+              <Table.Cell fontSize="xs" color="gray.100" whiteSpace="nowrap">
                 {expense?.date
                   ? new Date(expense.date).toLocaleString("pt-BR", {
                       dateStyle: "medium",
@@ -106,6 +112,14 @@ export default function ExpensesList() {
                 {expense?.category ?? "-"}
               </Table.Cell>
               <Table.Cell fontSize="xs" color="gray.500">
+                {expense?.paidAt
+                  ? new Date(expense.paidAt).toLocaleString("pt-BR", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })
+                  : "-"}
+              </Table.Cell>
+              <Table.Cell fontSize="xs" color="gray.500">
                 {expense?._creationTime
                   ? new Date(expense._creationTime).toLocaleString("pt-BR", {
                       dateStyle: "medium",
@@ -114,12 +128,12 @@ export default function ExpensesList() {
                   : "-"}
               </Table.Cell>
               <Table.Cell>
-                <Flex gap={2}>
+                <HStack>
                   <DuplicateExpenseDialog expense={expense} />
                   <ManageExpenseFiles expense={expense} />
                   <CreateOrEditExpenseDialog expense={expense} />
                   <RemoveExpenseDialog expense={expense} />
-                </Flex>
+                </HStack>
               </Table.Cell>
             </Table.Row>
           ))}
@@ -133,6 +147,14 @@ export default function ExpensesList() {
                       <Skeleton variant="shine" height="20px" />
                     </Table.Cell>
                   ))}
+                  <Table.Cell>
+                    <HStack gap={4}>
+                      <SkeletonCircle size={6} />
+                      <SkeletonCircle size={6} />
+                      <SkeletonCircle size={6} />
+                      <SkeletonCircle size={6} />
+                    </HStack>
+                  </Table.Cell>
                 </Table.Row>
               ))}
             </>
