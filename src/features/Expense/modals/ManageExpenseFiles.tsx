@@ -29,6 +29,7 @@ import {
 } from "@tabler/icons-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
+import { toaster } from "@/components/ui/toaster";
 
 type Expense = Doc<"expenses">;
 type ExpenseFile = Doc<"expensesFiles">;
@@ -65,27 +66,35 @@ export default function ManageExpenseFiles({
         // Step 1: Get a short-lived upload URL from the server
         const postUrl = await generateUploadUrl();
         // Multiple files upload logic can be added here
-        fileUpload.acceptedFiles.forEach(async (file) => {
-          // Step 2: POST the file to the upload URL obtained from the server
-          const result = await fetch(postUrl, {
-            method: "POST",
-            headers: { "Content-Type": file.type },
-            body: file,
-          });
-          // Step 3: Save the newly allocated storage ID in the database
-          const { storageId } = await result.json();
-          // Step 4: Inform the server about the new file associated with the expense
-          await sendFile({
-            storageId,
-            userId: expense.userId,
-            expenseId: expense._id,
-            contentType: file.type,
-            filename: file.name,
-            size: file.size,
-          });
-        });
+        await Promise.all(
+          fileUpload.acceptedFiles.map(async (file) => {
+            // Step 2: POST the file to the upload URL obtained from the server
+            const result = await fetch(postUrl, {
+              method: "POST",
+              headers: { "Content-Type": file.type },
+              body: file,
+            });
+            // Step 3: Save the newly allocated storage ID in the database
+            const { storageId } = await result.json();
+            // Step 4: Inform the server about the new file associated with the expense
+            await sendFile({
+              storageId,
+              userId: expense.userId,
+              expenseId: expense._id,
+              contentType: file.type,
+              filename: file.name,
+              size: file.size,
+            });
+          })
+        );
       } catch (error) {
         // Handle errors appropriately
+        toaster.create({
+          type: "error",
+          title: "Upload Failed",
+          description:
+            "An error occurred while uploading the files. Please try again.",
+        });
         throw new Error("Failed to upload file.", { cause: error });
       } finally {
         // Step 5: Clear the file input and loading state
@@ -279,6 +288,12 @@ function DownloadFile(props: DownloadFileProps) {
       const response = await fetch(url);
 
       if (!response.ok) {
+        toaster.create({
+          type: "error",
+          title: "Download Failed",
+          description:
+            "An error occurred while downloading the file. Please try again.",
+        });
         throw new Error(`Failed to fetch file: ${response.statusText}`);
       }
 
@@ -291,6 +306,12 @@ function DownloadFile(props: DownloadFileProps) {
       link.click();
       document.body.removeChild(link);
     } catch (error) {
+      toaster.create({
+        type: "error",
+        title: "Download Failed",
+        description:
+          "An error occurred while downloading the file. Please try again.",
+      });
       console.error("Failed to download file:", error);
     } finally {
       if (blobUrl) {
@@ -324,6 +345,12 @@ function DeleteFile(props: DeleteFileProps) {
         setLoading(true);
         await deleteFile({ fileId });
       } catch (error) {
+        toaster.create({
+          type: "error",
+          title: "Delete Failed",
+          description:
+            "An error occurred while deleting the file. Please try again.",
+        });
         throw new Error("Failed to delete file.", { cause: error });
       } finally {
         setLoading(false);
