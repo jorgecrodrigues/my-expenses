@@ -11,6 +11,7 @@ const commonExpenseArgs = {
   amount: v.number(),
   category: v.string(),
   date: v.string(),
+  paidAt: v.optional(v.string()),
 };
 
 /**

@@ -52,7 +52,7 @@ export default function ManageExpenseFiles({
   });
 
   const fileUpload = useFileUpload({
-    maxFiles: 1,
+    maxFiles: 10,
     maxFileSize: 10 * 1024 * 1024, // 10 MB
     accept: ["image/*", "application/pdf"],
   });
@@ -64,30 +64,33 @@ export default function ManageExpenseFiles({
         setLoading(true);
         // Step 1: Get a short-lived upload URL from the server
         const postUrl = await generateUploadUrl();
-        // Step 2: POST the file to the upload URL obtained from the server
-        const result = await fetch(postUrl, {
-          method: "POST",
-          headers: { "Content-Type": fileUpload.acceptedFiles[0].type },
-          body: fileUpload.acceptedFiles[0],
+        // Multiple files upload logic can be added here
+        fileUpload.acceptedFiles.forEach(async (file) => {
+          // Step 2: POST the file to the upload URL obtained from the server
+          const result = await fetch(postUrl, {
+            method: "POST",
+            headers: { "Content-Type": file.type },
+            body: file,
+          });
+          // Step 3: Save the newly allocated storage ID in the database
+          const { storageId } = await result.json();
+          // Step 4: Inform the server about the new file associated with the expense
+          await sendFile({
+            storageId,
+            userId: expense.userId,
+            expenseId: expense._id,
+            contentType: file.type,
+            filename: file.name,
+            size: file.size,
+          });
         });
-        // Step 3: Save the newly allocated storage ID in the database
-        const { storageId } = await result.json();
-        // Step 4: Inform the server about the new file associated with the expense
-        await sendFile({
-          storageId,
-          userId: expense.userId,
-          expenseId: expense._id,
-          contentType: fileUpload.acceptedFiles[0].type,
-          filename: fileUpload.acceptedFiles[0].name,
-          size: fileUpload.acceptedFiles[0].size,
-        });
+      } catch (error) {
+        // Handle errors appropriately
+        throw new Error("Failed to upload file.", { cause: error });
+      } finally {
         // Step 5: Clear the file input and loading state
         setLoading(false);
         fileUpload.clearFiles();
-      } catch (error) {
-        throw new Error("Failed to upload file.", { cause: error });
-      } finally {
-        setLoading(false);
       }
     },
     [expense, fileUpload, generateUploadUrl, sendFile]
@@ -99,6 +102,7 @@ export default function ManageExpenseFiles({
       open={open}
       placement="center"
       closeOnInteractOutside={false}
+      scrollBehavior="inside"
       size={{ mdDown: "full", md: "xl" }}
       onOpenChange={(e) => setOpen(e.open)}
       {...rest}
@@ -215,24 +219,23 @@ export default function ManageExpenseFiles({
 function FileUploadList() {
   const fileUpload = useFileUploadContext();
 
-  const files = fileUpload.acceptedFiles;
-
   const handleChangeFileName = React.useCallback(
-    (file: File, name: string) => {
+    (file: File, newFileName: string) => {
       fileUpload.setFiles(
         fileUpload.acceptedFiles.map((f) =>
-          f === file ? new File([f], name, { type: f.type }) : f
+          f === file ? new File([f], newFileName, { type: f.type }) : f
         )
       );
     },
     [fileUpload]
   );
 
-  if (files.length === 0) return null;
+  if (fileUpload.acceptedFiles.length === 0) return null;
+
   return (
-    <FileUpload.ItemGroup>
-      {files.map((file) => (
-        <FileUpload.Item key={file.name} file={file}>
+    <FileUpload.ItemGroup gap={1}>
+      {fileUpload.acceptedFiles.map((file) => (
+        <FileUpload.Item key={file.name} file={file} py={1}>
           <Editable.Root
             defaultValue={file.name}
             onValueCommit={({ value }) => handleChangeFileName(file, value)}
