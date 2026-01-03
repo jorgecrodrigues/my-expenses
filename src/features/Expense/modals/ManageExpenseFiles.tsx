@@ -73,6 +73,9 @@ export default function ManageExpenseFiles({
               headers: { "Content-Type": file.type },
               body: file,
             });
+            if (!result.ok) {
+              throw new Error(`Upload failed: ${result.statusText}`);
+            }
             // Step 3: Save the newly allocated storage ID in the database
             const { storageId } = await result.json();
             // Step 4: Inform the server about the new file associated with the expense
