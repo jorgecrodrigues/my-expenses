@@ -256,7 +256,7 @@ export default function DuplicateExpenseDialog(props: DuplicateExpenseProps) {
               <Dialog.ActionTrigger asChild>
                 <Button variant="outline">Cancel</Button>
               </Dialog.ActionTrigger>
-              <Button type="submit" variant="plain" colorScheme="blue">
+              <Button type="submit" variant="solid" colorScheme="blue">
                 {expense ? "Save Changes" : "Add Expense"}
               </Button>
             </Dialog.Footer>

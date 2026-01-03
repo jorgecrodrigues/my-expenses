@@ -11,6 +11,7 @@ const commonExpenseArgs = {
   amount: v.number(),
   category: v.string(),
   date: v.string(),
+  paidAt: v.optional(v.string()),
 };
 
 /**
@@ -208,6 +209,7 @@ export const addExpense = mutation({
       amount: args.amount,
       category: args.category,
       date: args.date,
+      paidAt: args.paidAt,
     });
     return expenseId;
   },
@@ -283,6 +285,7 @@ export const updateExpense = mutation({
       amount: args.amount,
       category: args.category,
       date: args.date,
+      paidAt: args.paidAt,
     });
   },
 });

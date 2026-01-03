@@ -24,9 +24,6 @@ export default function CategoryCombobox({
     initialItems,
     selectedItem,
     createOptionMode: "prepend",
-    onCreateItem: (item) => {
-      console.log("Created new item:", item);
-    },
   });
 
   return (

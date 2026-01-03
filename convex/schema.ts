@@ -30,7 +30,19 @@ export default defineSchema({
     amount: v.number(),
     category: v.string(),
     date: v.string(),
+    paidAt: v.optional(v.string()),
   })
     .index("by_amount", ["amount"])
     .index("by_date", ["date"]),
+  expensesFiles: defineTable({
+    userId: v.id("users"),
+    storageId: v.id("_storage"),
+    expenseId: v.id("expenses"),
+    filename: v.string(),
+    contentType: v.string(),
+    size: v.number(),
+    type: v.optional(
+      v.union(v.literal("invoice"), v.literal("receipt"), v.literal("other"))
+    ),
+  }).index("by_filename", ["filename"]),
 });

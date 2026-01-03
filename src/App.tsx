@@ -1,4 +1,3 @@
-import React from "react";
 import AppGrid from "@/shared/components/AppGrid";
 import Header from "@/shared/components/Header";
 import Sidebar from "@/shared/components/Sidebar";
@@ -6,7 +5,7 @@ import { Route, Switch } from "wouter";
 import ExpensePage from "@/features/Expense/pages/ExpensePage";
 import { AuthLoading, Authenticated, Unauthenticated } from "convex/react";
 import SingIn from "@/features/Auth/pages/SignIn";
-import { Center } from "@chakra-ui/react";
+import { Box, Center } from "@chakra-ui/react";
 import Logo from "@/shared/components/Logo";
 import DashboardPage from "@/features/Dashboard/pages/DashboardPage";
 import AboutPage from "./features/About/pages/AboutPage";
@@ -25,7 +24,7 @@ export default function App() {
           header={<Header />}
           sidebar={<Sidebar />}
           children={
-            <React.Fragment>
+            <Box px={5} py={4} bg="bg.muted">
               <Switch>
                 <Route path="/" component={HomePage} />
                 <Route path="/dashboard" component={DashboardPage} />
@@ -43,7 +42,7 @@ export default function App() {
                   <h2>404 - Page Not Found</h2>
                 </Route>
               </Switch>
-            </React.Fragment>
+            </Box>
           }
         />
       </Authenticated>

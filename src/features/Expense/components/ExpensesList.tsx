@@ -6,10 +6,10 @@ import { api } from "../../../../convex/_generated/api";
 import {
   Badge,
   Button,
-  Flex,
   HStack,
   Input,
   Skeleton,
+  SkeletonCircle,
   Table,
 } from "@chakra-ui/react";
 import CreateOrEditExpenseDialog from "../modals/CreateOrEditExpense";
@@ -17,6 +17,7 @@ import RemoveExpenseDialog from "../modals/RemoveExpense";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import DuplicateExpenseDialog from "../modals/DuplicateExpense";
 import useIntersectionObserver from "@/shared/hooks/useIntersectionObserver";
+import ManageExpenseFiles from "../modals/ManageExpenseFiles";
 
 export default function ExpensesList() {
   const [search, setSearch] = React.useState<string>("");
@@ -72,10 +73,15 @@ export default function ExpensesList() {
             <Table.ColumnHeader>Name</Table.ColumnHeader>
             <Table.ColumnHeader>Description</Table.ColumnHeader>
             <Table.ColumnHeader>Amount</Table.ColumnHeader>
-            <Table.ColumnHeader>Date (Due date)</Table.ColumnHeader>
+            <Table.ColumnHeader whiteSpace="nowrap">
+              Date (Due date)
+            </Table.ColumnHeader>
             <Table.ColumnHeader>Category</Table.ColumnHeader>
-            <Table.ColumnHeader>Created At</Table.ColumnHeader>
-            <Table.ColumnHeader>Actions</Table.ColumnHeader>
+            <Table.ColumnHeader whiteSpace="nowrap">Paid At</Table.ColumnHeader>
+            <Table.ColumnHeader whiteSpace="nowrap">
+              Created At
+            </Table.ColumnHeader>
+            <Table.ColumnHeader w="1%">Actions</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -93,7 +99,7 @@ export default function ExpensesList() {
                     })
                   : "-"}
               </Table.Cell>
-              <Table.Cell fontSize="xs" color="gray.100">
+              <Table.Cell fontSize="xs" color="gray.100" whiteSpace="nowrap">
                 {expense?.date
                   ? new Date(expense.date).toLocaleString("pt-BR", {
                       dateStyle: "medium",
@@ -104,6 +110,17 @@ export default function ExpensesList() {
               <Table.Cell fontSize="xs" color="gray.500">
                 {expense?.category ?? "-"}
               </Table.Cell>
+              <Table.Cell
+                fontSize="xs"
+                color={expense?.paidAt ? "green.400" : "gray.400"}
+              >
+                {expense?.paidAt
+                  ? new Date(expense.paidAt).toLocaleString("pt-BR", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })
+                  : "-"}
+              </Table.Cell>
               <Table.Cell fontSize="xs" color="gray.500">
                 {expense?._creationTime
                   ? new Date(expense._creationTime).toLocaleString("pt-BR", {
@@ -113,11 +130,12 @@ export default function ExpensesList() {
                   : "-"}
               </Table.Cell>
               <Table.Cell>
-                <Flex gap={2}>
+                <HStack>
                   <DuplicateExpenseDialog expense={expense} />
+                  <ManageExpenseFiles expense={expense} />
                   <CreateOrEditExpenseDialog expense={expense} />
                   <RemoveExpenseDialog expense={expense} />
-                </Flex>
+                </HStack>
               </Table.Cell>
             </Table.Row>
           ))}
@@ -131,6 +149,14 @@ export default function ExpensesList() {
                       <Skeleton variant="shine" height="20px" />
                     </Table.Cell>
                   ))}
+                  <Table.Cell>
+                    <HStack gap={7}>
+                      <SkeletonCircle size={6} />
+                      <SkeletonCircle size={6} />
+                      <SkeletonCircle size={6} />
+                      <SkeletonCircle size={6} />
+                    </HStack>
+                  </Table.Cell>
                 </Table.Row>
               ))}
             </>
@@ -138,7 +164,7 @@ export default function ExpensesList() {
 
           {status === "CanLoadMore" ? (
             <Table.Row>
-              <Table.Cell colSpan={7}>
+              <Table.Cell colSpan={8}>
                 <Button variant="surface" onClick={() => loadMore(perPage)}>
                   Load More
                 </Button>
@@ -153,12 +179,20 @@ export default function ExpensesList() {
                   <Skeleton variant="shine" height="20px" />
                 </Table.Cell>
               ))}
+              <Table.Cell>
+                <HStack gap={7}>
+                  <SkeletonCircle size={6} />
+                  <SkeletonCircle size={6} />
+                  <SkeletonCircle size={6} />
+                  <SkeletonCircle size={6} />
+                </HStack>
+              </Table.Cell>
             </Table.Row>
           ) : null}
 
           {status === "Exhausted" ? (
             <Table.Row>
-              <Table.Cell colSpan={7}>
+              <Table.Cell colSpan={8}>
                 <Badge variant="outline" size="md">
                   No more expenses to load.
                 </Badge>
@@ -168,7 +202,7 @@ export default function ExpensesList() {
 
           {results && results.length === 0 ? (
             <Table.Row>
-              <Table.Cell colSpan={7}>
+              <Table.Cell colSpan={8}>
                 No expenses found. Please add a new expense.
               </Table.Cell>
             </Table.Row>

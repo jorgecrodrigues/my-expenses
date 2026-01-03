@@ -6,7 +6,7 @@ import {
   CloseButton,
   Dialog,
   Field,
-  Flex,
+  HStack,
   IconButton,
   Input,
   Portal,
@@ -155,6 +155,7 @@ export default function CreateOrEditExpenseDialog(
                 </Field.HelperText>
                 <Field.ErrorText />
               </Field.Root>
+
               <Field.Root>
                 <Field.Label>
                   Description
@@ -172,7 +173,8 @@ export default function CreateOrEditExpenseDialog(
                 </Field.HelperText>
                 <Field.ErrorText />
               </Field.Root>
-              <Flex gap={2}>
+
+              <HStack>
                 <Field.Root>
                   <Field.Label>
                     Amount (BRL)
@@ -211,23 +213,49 @@ export default function CreateOrEditExpenseDialog(
                   </Field.HelperText>
                   <Field.ErrorText />
                 </Field.Root>
-              </Flex>
+              </HStack>
 
-              <CategoryCombobox
-                initialItems={expenseCategoryOptions}
-                selectedItem={expense?.category}
-                inputProps={{
-                  name: "category",
-                  placeholder: "Enter category",
-                  required: true,
-                }}
-              />
+              <HStack>
+                <CategoryCombobox
+                  initialItems={expenseCategoryOptions}
+                  selectedItem={expense?.category}
+                  inputProps={{
+                    name: "category",
+                    placeholder: "Enter category",
+                    required: true,
+                  }}
+                />
+                <Field.Root>
+                  <Field.Label>
+                    Paid At
+                    <Field.RequiredIndicator />
+                  </Field.Label>
+                  <Input
+                    type="datetime-local"
+                    name="paidAt"
+                    placeholder="Enter date"
+                    defaultValue={
+                      expense?.paidAt
+                        ? new Date(expense.paidAt).toISOString().slice(0, 16)
+                        : ""
+                    }
+                  />
+                  <Field.HelperText>
+                    Please enter the paid at date.
+                  </Field.HelperText>
+                  <Field.ErrorText />
+                </Field.Root>
+              </HStack>
             </Dialog.Body>
             <Dialog.Footer>
               <Dialog.ActionTrigger asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="plain">Cancel</Button>
               </Dialog.ActionTrigger>
-              <Button type="submit" variant="plain" colorScheme="blue">
+              <Button
+                type="submit"
+                variant="solid"
+                colorPalette={expense ? "blue" : "green"}
+              >
                 {expense ? "Save Changes" : "Add Expense"}
               </Button>
             </Dialog.Footer>
