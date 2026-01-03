@@ -73,7 +73,11 @@ export default function CategoryDetail() {
         if (!acc[item.name]) {
           acc[item.name] = 0;
         }
+        if (!acc[`${item.name} [paid]`]) {
+          acc[`${item.name} [paid]`] = 0;
+        }
         acc[item.name] += item.amount;
+        acc[`${item.name} [paid]`] += item.paidAt ? item.amount : 0;
         return acc;
       },
       {} as Record<string, number>
@@ -132,9 +136,7 @@ export default function CategoryDetail() {
 
     return distinctNames.map((name) => ({
       name,
-      color: data.some((item) => item.name === name && item.paidAt)
-        ? "gray.400"
-        : generateColorByString(name),
+      color: generateColorByString(name),
       stackId: "a",
     }));
   }, [data]);
@@ -155,17 +157,30 @@ export default function CategoryDetail() {
       </Text>
 
       <HStack spaceX={4} wrap="wrap" justify="flex-end" align="flex-end">
-        {Object.entries(totalByCategoryByName).map(([name, total]) => (
-          <Text key={name} fontSize="sm">
-            {name}:{" "}
-            <Span fontWeight="bold">
-              {total?.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              })}
-            </Span>
-          </Text>
-        ))}
+        {Object.entries(totalByCategoryByName)
+          .filter(([name]) => !name.includes("[paid]"))
+          .map(([name, total]) => (
+            <Text key={name} fontSize="xs">
+              {name}:{" "}
+              <Span fontWeight="bold">
+                {total?.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
+              </Span>
+              {", "}
+              Excluding paid:{" "}
+              <Span fontWeight="bold">
+                {(
+                  totalByCategoryByName[name] -
+                  totalByCategoryByName[`${name} [paid]`]
+                ).toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
+              </Span>
+            </Text>
+          ))}
       </HStack>
 
       <Text fontSize="xs" color="red.400" textAlign="right" lineHeight={0}>
