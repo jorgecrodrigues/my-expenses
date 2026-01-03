@@ -6,7 +6,6 @@ import { api } from "../../../../convex/_generated/api";
 import {
   Badge,
   Button,
-  Flex,
   HStack,
   Input,
   Skeleton,
