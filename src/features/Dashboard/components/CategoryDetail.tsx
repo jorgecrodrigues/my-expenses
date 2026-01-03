@@ -58,6 +58,13 @@ export default function CategoryDetail() {
     if (!data) return 0;
     return data.reduce((sum, item) => sum + item.amount, 0);
   }, [data]);
+  // Calculate total expenses for the category excluding paid items
+  const totalByCategoryExceptPaid = React.useMemo(() => {
+    if (!data) return 0;
+    return data
+      .filter((item) => !item.paidAt)
+      .reduce((sum, item) => sum + item.amount, 0);
+  }, [data]);
   // Calculate total expenses for the category by name
   const totalByCategoryByName = React.useMemo(() => {
     if (!data) return {};
@@ -125,7 +132,9 @@ export default function CategoryDetail() {
 
     return distinctNames.map((name) => ({
       name,
-      color: generateColorByString(name),
+      color: data.some((item) => item.name === name && item.paidAt)
+        ? "gray.400"
+        : generateColorByString(name),
       stackId: "a",
     }));
   }, [data]);
@@ -159,12 +168,24 @@ export default function CategoryDetail() {
         ))}
       </HStack>
 
-      <Text fontWeight={700} color="red.400" textAlign="right" lineHeight={0}>
-        Total Expenses:{" "}
-        {totalByCategory.toLocaleString("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-        })}
+      <Text fontSize="xs" color="red.400" textAlign="right" lineHeight={0}>
+        Total:{" "}
+        <b>
+          {totalByCategory.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          })}
+        </b>
+      </Text>
+
+      <Text color="red.400" textAlign="right" lineHeight={0}>
+        Total (excluding paid items):{" "}
+        <b>
+          {totalByCategoryExceptPaid.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          })}
+        </b>
       </Text>
 
       <VStack justify="center" align="center">
