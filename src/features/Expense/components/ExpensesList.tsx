@@ -5,8 +5,10 @@ import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import {
   Badge,
+  Box,
   Button,
   HStack,
+  IconButton,
   Input,
   Skeleton,
   SkeletonCircle,
@@ -18,10 +20,13 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 import DuplicateExpenseDialog from "../modals/DuplicateExpense";
 import useIntersectionObserver from "@/shared/hooks/useIntersectionObserver";
 import ManageExpenseFiles from "../modals/ManageExpenseFiles";
+import { IconCalendarMinus, IconCalendarPlus } from "@tabler/icons-react";
 
 export default function ExpensesList() {
   const [search, setSearch] = React.useState<string>("");
-  const [date, setDate] = React.useState<string | undefined>();
+  const [date, setDate] = React.useState<string | undefined>(
+    new Date().toISOString().split("T")[0],
+  );
   const [perPage] = React.useState<number>(15);
 
   const { ref, entry } = useIntersectionObserver({
@@ -37,11 +42,24 @@ export default function ExpensesList() {
       userId: user?._id as Id<"users">,
       orderBy: "by_date",
       order: "desc",
-      search,
       date: date,
     },
-    { initialNumItems: perPage }
+    { initialNumItems: perPage },
   );
+
+  const handlePreviousMonth = () => {
+    const prevMonth = new Date(date || new Date().toISOString().split("T")[0]);
+    prevMonth.setDate(1);
+    prevMonth.setMonth(prevMonth.getMonth() - 1);
+    setDate(prevMonth.toISOString().split("T")[0]);
+  };
+
+  const handleNextMonth = () => {
+    const nextMonth = new Date(date || new Date().toISOString().split("T")[0]);
+    nextMonth.setDate(1);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    setDate(nextMonth.toISOString().split("T")[0]);
+  };
 
   React.useEffect(() => {
     if (entry?.isIntersecting && status === "CanLoadMore") {
@@ -51,13 +69,33 @@ export default function ExpensesList() {
 
   return (
     <>
-      <HStack mb={4} justifyContent="flex-end" alignItems="center" gap={8}>
+      <HStack mb={4} justifyContent="flex-end" alignItems="center">
         <HStack>
           <Input
             variant="outline"
             placeholder="Search expenses..."
             onChange={(e) => setSearch(e.target.value)}
           />
+
+          <Box mx={4} w={1} h={5} bg="gray.500" />
+
+          <IconButton
+            aria-label="Previous Month"
+            title="Previous Month"
+            variant="outline"
+            onClick={handlePreviousMonth}
+          >
+            <IconCalendarMinus />
+          </IconButton>
+          <IconButton
+            aria-label="Next Month"
+            title="Next Month"
+            variant="outline"
+            onClick={handleNextMonth}
+          >
+            <IconCalendarPlus />
+          </IconButton>
+
           <Input
             type="date"
             variant="outline"
@@ -65,6 +103,7 @@ export default function ExpensesList() {
             onChange={(e) => setDate(e.target.value)}
           />
         </HStack>
+        <Box mx={4} w="1px" h={5} bg="gray.500" />
         <CreateOrEditExpenseDialog />
       </HStack>
       <Table.Root size="sm" striped>
@@ -85,73 +124,98 @@ export default function ExpensesList() {
           </Table.Row>
         </Table.Header>
         <Table.Body>
-          {results?.map?.((expense) => (
-            <Table.Row key={expense._id}>
-              <Table.Cell fontSize="xs">{expense?.name ?? "-"}</Table.Cell>
-              <Table.Cell fontSize="xs" color="fg.subtle">
-                {expense?.description ?? "-"}
-              </Table.Cell>
-              <Table.Cell fontSize="xs" color="fg.subtle">
-                {expense?.amount
-                  ? expense.amount.toLocaleString("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    })
-                  : "-"}
-              </Table.Cell>
-              <Table.Cell
-                title={
-                  new Date(expense.date) < new Date()
-                    ? "This expense is overdue"
-                    : "This expense is not overdue"
-                }
-                fontSize="xs"
-                color={
-                  expense.paidAt
-                    ? "fg.subtle"
-                    : new Date(expense.date) < new Date()
-                      ? "fg.error"
-                      : "fg.subtle"
-                }
-                whiteSpace="nowrap"
-              >
-                {new Date(expense.date).toLocaleString("pt-BR", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
+          {results
+            ?.filter(
+              (expense) =>
+                expense.name.toLowerCase().includes(search.toLowerCase()) ||
+                expense.description
+                  ?.toLowerCase()
+                  ?.includes(search.toLowerCase()),
+            )
+            ?.map?.((expense) => (
+              <Table.Row key={expense._id}>
+                <Table.Cell fontSize="xs">{expense?.name ?? "-"}</Table.Cell>
+                <Table.Cell fontSize="xs" color="fg.subtle">
+                  {expense?.description ?? "-"}
+                </Table.Cell>
+                <Table.Cell fontSize="xs" color="fg.subtle">
+                  {expense?.amount
+                    ? expense.amount.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })
+                    : "-"}
+                </Table.Cell>
+                <Table.Cell
+                  title={
+                    new Date(expense.date) < new Date()
+                      ? "This expense is overdue"
+                      : "This expense is not overdue"
+                  }
+                  fontSize="xs"
+                  color={
+                    expense.paidAt
+                      ? "fg.subtle"
+                      : new Date(expense.date) < new Date()
+                        ? "fg.error"
+                        : "fg.subtle"
+                  }
+                  whiteSpace="nowrap"
+                >
+                  {new Date(expense.date).toLocaleString("pt-BR", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+                </Table.Cell>
+                <Table.Cell fontSize="xs" color="fg.subtle">
+                  {expense?.category ?? "-"}
+                </Table.Cell>
+                <Table.Cell
+                  fontSize="xs"
+                  color={expense?.paidAt ? "fg.success" : "fg.subtle"}
+                >
+                  {expense?.paidAt
+                    ? new Date(expense.paidAt).toLocaleString("pt-BR", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })
+                    : "-"}
+                </Table.Cell>
+                <Table.Cell fontSize="xs" color="fg.subtle">
+                  {expense?._creationTime
+                    ? new Date(expense._creationTime).toLocaleString("pt-BR", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })
+                    : "-"}
+                </Table.Cell>
+                <Table.Cell>
+                  <HStack>
+                    <DuplicateExpenseDialog expense={expense} />
+                    <ManageExpenseFiles expense={expense} />
+                    <CreateOrEditExpenseDialog expense={expense} />
+                    <RemoveExpenseDialog expense={expense} />
+                  </HStack>
+                </Table.Cell>
+              </Table.Row>
+            ))}
+
+          <Table.Row>
+            <Table.Cell
+              colSpan={8}
+              fontSize="lg"
+              fontWeight="bold"
+              textAlign="left"
+            >
+              Total:{" "}
+              {results
+                ?.reduce((acc, expense) => acc + (expense.amount || 0), 0)
+                .toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
                 })}
-              </Table.Cell>
-              <Table.Cell fontSize="xs" color="fg.subtle">
-                {expense?.category ?? "-"}
-              </Table.Cell>
-              <Table.Cell
-                fontSize="xs"
-                color={expense?.paidAt ? "fg.success" : "fg.subtle"}
-              >
-                {expense?.paidAt
-                  ? new Date(expense.paidAt).toLocaleString("pt-BR", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })
-                  : "-"}
-              </Table.Cell>
-              <Table.Cell fontSize="xs" color="fg.subtle">
-                {expense?._creationTime
-                  ? new Date(expense._creationTime).toLocaleString("pt-BR", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })
-                  : "-"}
-              </Table.Cell>
-              <Table.Cell>
-                <HStack>
-                  <DuplicateExpenseDialog expense={expense} />
-                  <ManageExpenseFiles expense={expense} />
-                  <CreateOrEditExpenseDialog expense={expense} />
-                  <RemoveExpenseDialog expense={expense} />
-                </HStack>
-              </Table.Cell>
-            </Table.Row>
-          ))}
+            </Table.Cell>
+          </Table.Row>
 
           {status === "LoadingFirstPage" ? (
             <>
