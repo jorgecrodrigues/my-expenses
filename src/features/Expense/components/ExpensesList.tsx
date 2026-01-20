@@ -13,6 +13,7 @@ import {
   Skeleton,
   SkeletonCircle,
   Table,
+  Text,
 } from "@chakra-ui/react";
 import CreateOrEditExpenseDialog from "../modals/CreateOrEditExpense";
 import RemoveExpenseDialog from "../modals/RemoveExpense";
@@ -60,6 +61,36 @@ export default function ExpensesList() {
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     setDate(nextMonth.toISOString().split("T")[0]);
   };
+
+  // Calculate totals based on filtered results
+  const total: number = results
+    ?.filter(
+      (expense) =>
+        expense.name.toLowerCase().includes(search) ||
+        expense.description?.toLowerCase()?.includes(search) ||
+        expense.category?.toLowerCase()?.includes(search),
+    )
+    ?.reduce((acc, expense) => acc + (expense.amount || 0), 0);
+  // Calculate paid and unpaid totals based on filtered results
+  const paidTotal: number = results
+    ?.filter(
+      (expense) =>
+        expense.paidAt &&
+        (expense.name.toLowerCase().includes(search) ||
+          expense.description?.toLowerCase()?.includes(search) ||
+          expense.category?.toLowerCase()?.includes(search)),
+    )
+    ?.reduce((acc, expense) => acc + (expense.amount || 0), 0);
+  // Calculate paid and unpaid totals based on filtered results
+  const unpaidTotal: number = results
+    ?.filter(
+      (expense) =>
+        !expense.paidAt &&
+        (expense.name.toLowerCase().includes(search) ||
+          expense.description?.toLowerCase()?.includes(search) ||
+          expense.category?.toLowerCase()?.includes(search)),
+    )
+    ?.reduce((acc, expense) => acc + (expense.amount || 0), 0);
 
   React.useEffect(() => {
     if (entry?.isIntersecting && status === "CanLoadMore") {
@@ -205,13 +236,35 @@ export default function ExpensesList() {
               fontWeight="bold"
               textAlign="left"
             >
-              Total:{" "}
-              {results
-                ?.reduce((acc, expense) => acc + (expense.amount || 0), 0)
-                .toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                })}
+              <HStack spaceX={8} align="baseline">
+                <Text color="fg.accent" fontSize="md" fontWeight="bold">
+                  Total:
+                  <Text as="span" ml={2} color="fg.accent">
+                    {total.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })}
+                  </Text>
+                </Text>
+                <Text color="fg.error" fontSize="xs" fontWeight="semibold">
+                  Unpaid:
+                  <Text as="span" ml={2} color="fg.error">
+                    {unpaidTotal.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })}
+                  </Text>
+                </Text>
+                <Text color="fg.success" fontSize="xs" fontWeight="semibold">
+                  Paid:
+                  <Text as="span" ml={2} color="fg.success">
+                    {paidTotal.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })}
+                  </Text>
+                </Text>
+              </HStack>
             </Table.Cell>
           </Table.Row>
 
