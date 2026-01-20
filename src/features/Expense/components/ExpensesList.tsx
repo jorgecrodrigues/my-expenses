@@ -75,7 +75,7 @@ export default function ExpensesList() {
             variant="outline"
             placeholder="Search expenses..."
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setSearch(e.target.value?.toLowerCase())
+              setSearch(e.target.value.toLowerCase())
             }
           />
           <Box mx={4} w="1px" h={5} bg="gray.500" />
