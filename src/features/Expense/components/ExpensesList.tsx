@@ -74,11 +74,11 @@ export default function ExpensesList() {
           <Input
             variant="outline"
             placeholder="Search expenses..."
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setSearch(e.target.value?.toLowerCase())
+            }
           />
-
-          <Box mx={4} w={1} h={5} bg="gray.500" />
-
+          <Box mx={4} w="1px" h={5} bg="gray.500" />
           <IconButton
             aria-label="Previous Month"
             title="Previous Month"
@@ -95,7 +95,6 @@ export default function ExpensesList() {
           >
             <IconCalendarPlus />
           </IconButton>
-
           <Input
             type="date"
             variant="outline"
@@ -127,10 +126,9 @@ export default function ExpensesList() {
           {results
             ?.filter(
               (expense) =>
-                expense.name.toLowerCase().includes(search.toLowerCase()) ||
-                expense.description
-                  ?.toLowerCase()
-                  ?.includes(search.toLowerCase()),
+                expense.name.toLowerCase().includes(search) ||
+                expense.description?.toLowerCase()?.includes(search) ||
+                expense.category?.toLowerCase()?.includes(search),
             )
             ?.map?.((expense) => (
               <Table.Row key={expense._id}>
