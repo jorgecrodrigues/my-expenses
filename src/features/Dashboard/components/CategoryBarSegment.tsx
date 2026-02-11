@@ -56,7 +56,7 @@ export default function CategoryBarSegment() {
         </Skeleton>
       </HStack>
       <Skeleton loading={!data}>
-        <BarSegment.Root mb={2} chart={chart}>
+        <BarSegment.Root chart={chart}>
           <BarSegment.Content>
             <BarSegment.Value />
             <BarSegment.Bar
@@ -68,7 +68,7 @@ export default function CategoryBarSegment() {
                   rounded={0}
                   onClick={() => {
                     setLocation(
-                      `/dashboard/month/${params.month || today.getMonth() + 1}/year/${params.year || today.getFullYear()}/category/${payload.name}`
+                      `/dashboard/month/${params.month || today.getMonth() + 1}/year/${params.year || today.getFullYear()}/category/${payload.name}`,
                     );
                   }}
                 />
@@ -82,7 +82,7 @@ export default function CategoryBarSegment() {
           <BarSegment.Legend showPercent />
         </BarSegment.Root>
       </Skeleton>
-      <Skeleton w="fit-content" loading={!data}>
+      <Skeleton mx="auto" w="fit-content" loading={!data}>
         <Text fontSize="sm" color="gray.500">
           Data for{" "}
           {date

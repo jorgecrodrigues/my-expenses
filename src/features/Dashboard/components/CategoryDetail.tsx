@@ -80,7 +80,7 @@ export default function CategoryDetail() {
         acc[`${item.name} [paid]`] += item.paidAt ? item.amount : 0;
         return acc;
       },
-      {} as Record<string, number>
+      {} as Record<string, number>,
     );
   }, [data]);
 
@@ -88,28 +88,19 @@ export default function CategoryDetail() {
   const normalizedData: NormalizedData[] = React.useMemo(() => {
     if (!data) return [];
 
-    const months: string[] = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
+    // Generate month labels
+    const months: string[] = Array.from({ length: 12 }, (_, i) => {
+      const date = new Date(0, i);
+      return date.toLocaleString(undefined, { month: "long" });
+    });
 
     const monthData = months.map((month, index) => {
       const monthItems = data.filter(
-        (item) => new Date(item.date).getMonth() === index
+        (item) => new Date(item.date).getMonth() === index,
       );
 
       const distinctNames = Array.from(
-        new Set(monthItems.map((item) => item.name))
+        new Set(monthItems.map((item) => item.name)),
       );
 
       const totalAmountByName = distinctNames.map((name) => {
@@ -148,62 +139,32 @@ export default function CategoryDetail() {
 
   return (
     <>
-      <Text fontSize="lg" fontWeight="bold" lineHeight={0}>
-        Show details for category: {params.category || "None"}
-      </Text>
-      <Text fontSize="sm" lineHeight={0}>
-        Breakdown of expenses by month for the year{": "}
+      <Text fontSize="md">
+        Breakdown of expenses by month for <b>{params.category}</b> in{" "}
         {date ? date.getFullYear() : "All Time"}
       </Text>
 
-      <HStack spaceX={4} wrap="wrap" justify="flex-end" align="flex-end">
-        {Object.entries(totalByCategoryByName)
-          .filter(([name]) => !name.includes("[paid]"))
-          .map(([name, total]) => (
-            <Text key={name} fontSize="xs">
-              {name}:{" "}
-              <Span fontWeight="bold">
-                {total?.toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                })}
-              </Span>
-              {", "}
-              Excluding paid:{" "}
-              <Span fontWeight="bold">
-                {(
-                  totalByCategoryByName[name] -
-                  totalByCategoryByName[`${name} [paid]`]
-                ).toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                })}
-              </Span>
-            </Text>
-          ))}
-      </HStack>
-
-      <Text fontSize="xs" color="red.400" textAlign="right" lineHeight={0}>
-        Total:{" "}
-        <b>
+      <Text textAlign="right" fontSize="sm">
+        Paid{" "}
+        <Span fontWeight="bold" color="green.300">
+          {(totalByCategory - totalByCategoryExceptPaid).toLocaleString(
+            "pt-BR",
+            {
+              style: "currency",
+              currency: "BRL",
+            },
+          )}
+        </Span>
+        {" from "}
+        <Span fontWeight="bold" color="red.300">
           {totalByCategory.toLocaleString("pt-BR", {
             style: "currency",
             currency: "BRL",
           })}
-        </b>
+        </Span>
       </Text>
 
-      <Text color="red.400" textAlign="right" lineHeight={0}>
-        Total (excluding paid items):{" "}
-        <b>
-          {totalByCategoryExceptPaid.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          })}
-        </b>
-      </Text>
-
-      <VStack justify="center" align="center">
+      <VStack mb={8} justify="center" align="center">
         <Chart.Root h={280} chart={chart}>
           <BarChart data={chart.data} barCategoryGap={4} stackOffset="positive">
             <CartesianGrid
@@ -211,15 +172,17 @@ export default function CategoryDetail() {
               strokeDasharray="3 3"
               vertical={false}
             />
+
             <XAxis
-              axisLine={false}
-              tickLine={false}
+              axisLine={true}
+              tickLine={true}
               dataKey={chart.key("month")}
               stroke={chart.color("border")}
             />
+
             <YAxis
-              axisLine={false}
-              tickLine={false}
+              axisLine={true}
+              tickLine={true}
               tickFormatter={chart.formatNumber({
                 style: "currency",
                 currency: "BRL",
@@ -227,11 +190,13 @@ export default function CategoryDetail() {
               })}
               stroke={chart.color("border")}
             />
+
             <Tooltip
               cursor={{ fill: chart.color("background.muted") }}
               animationDuration={0}
               content={<Chart.Tooltip />}
             />
+
             {chart.series.map((item) => (
               <Bar
                 key={item.name}
@@ -247,7 +212,7 @@ export default function CategoryDetail() {
                     fontSize: 12,
                     fontWeight: 600,
                     fill: getContrastingTextColor(
-                      generateColorByString(item?.name?.toString() ?? "")
+                      generateColorByString(item?.name?.toString() ?? ""),
                     ),
                   }}
                 />
@@ -264,6 +229,34 @@ export default function CategoryDetail() {
             : "All Time"}
         </Text>
       </VStack>
+
+      <HStack spaceX={4} wrap="wrap" justify="flex-end" align="flex-end">
+        {Object.entries(totalByCategoryByName)
+          .filter(([name]) => !name.includes("[paid]"))
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([name, total]) => (
+            <Text key={name} fontSize="xs">
+              {name}: (
+              <Span title="Paid" fontWeight="bold" color="green.200">
+                {totalByCategoryByName[`${name} [paid]`].toLocaleString(
+                  "pt-BR",
+                  {
+                    style: "currency",
+                    currency: "BRL",
+                  },
+                )}
+              </Span>
+              {" / "}
+              <Span title="Total" fontWeight="bold" color="red.200">
+                {total?.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
+              </Span>
+              )
+            </Text>
+          ))}
+      </HStack>
     </>
   );
 }
