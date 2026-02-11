@@ -1,4 +1,5 @@
 import {
+  Box,
   Heading,
   HStack,
   IconButton,
@@ -39,7 +40,7 @@ export default function DashboardPage() {
       return;
     }
     setLocation(
-      `/dashboard/month/${selectedDate.getMonth() + 1}/year/${selectedDate.getFullYear()}`
+      `/dashboard/month/${selectedDate.getMonth() + 1}/year/${selectedDate.getFullYear()}`,
     );
   };
 
@@ -47,10 +48,10 @@ export default function DashboardPage() {
     const prevMonth = new Date(
       date.getFullYear(),
       date.getMonth() - 1,
-      date.getDate()
+      date.getDate(),
     );
     setLocation(
-      `/dashboard/month/${prevMonth.getMonth() + 1}/year/${prevMonth.getFullYear()}`
+      `/dashboard/month/${prevMonth.getMonth() + 1}/year/${prevMonth.getFullYear()}`,
     );
   };
 
@@ -58,10 +59,10 @@ export default function DashboardPage() {
     const nextMonth = new Date(
       date.getFullYear(),
       date.getMonth() + 1,
-      date.getDate()
+      date.getDate(),
     );
     setLocation(
-      `/dashboard/month/${nextMonth.getMonth() + 1}/year/${nextMonth.getFullYear()}`
+      `/dashboard/month/${nextMonth.getMonth() + 1}/year/${nextMonth.getFullYear()}`,
     );
   };
 
@@ -71,7 +72,7 @@ export default function DashboardPage() {
         <Heading>Dashboard</Heading>
         <Text>Welcome to the Dashboard!</Text>
       </VStack>
-      <HStack mb={4} align="flex-end" justify="flex-end">
+      <HStack mb={8} align="flex-end" justify="flex-end">
         <IconButton
           aria-label="Previous Month"
           title="Previous Month"
@@ -103,9 +104,13 @@ export default function DashboardPage() {
           <IconCalendarMonth />
         </IconButton>
       </HStack>
-      <VStack spaceY={4} align="stretch">
-        <CategoryBarSegment />
-        <CategoryDetail />
+      <VStack spaceY={8} align="stretch">
+        <Box>
+          <CategoryBarSegment />
+        </Box>
+        <Box>
+          <CategoryDetail />
+        </Box>
       </VStack>
     </>
   );
