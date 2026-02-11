@@ -24,7 +24,7 @@ export default function App() {
           header={<Header />}
           sidebar={<Sidebar />}
           children={
-            <Box px={5} py={4} bg="bg.muted">
+            <Box px={5} py="30px" minH="calc(100vh - 60px)" bg="bg.muted">
               <Switch>
                 <Route path="/" component={HomePage} />
                 <Route path="/dashboard" component={DashboardPage} />
