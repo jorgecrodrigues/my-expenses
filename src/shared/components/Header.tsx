@@ -5,11 +5,14 @@ import {
   Popover,
   Button,
   Portal,
+  IconButton,
+  Box,
 } from "@chakra-ui/react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { BrandIcon } from "./icons/BrandIcon";
+import { IconLogout } from "@tabler/icons-react";
 
 export default function Header() {
   const { signOut } = useAuthActions();
@@ -53,21 +56,25 @@ export default function Header() {
             <Popover.Content>
               <Popover.Arrow />
               <Popover.Body>
-                <Text fontSize="md" fontWeight="bold">
-                  {user?.name || "Guest"}
-                </Text>
-                <Text mb={2} fontSize="sm">
-                  {user?.email || "Not provided"}
-                </Text>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  width="100%"
-                  colorPalette="red"
-                  onClick={() => signOut()}
-                >
-                  Logout
-                </Button>
+                <HStack>
+                  <Box>
+                    <Text fontSize="md" fontWeight="bold">
+                      {user?.name || "Guest"}
+                    </Text>
+                    <Text mb={2} fontSize="sm">
+                      {user?.email || "Not provided"}
+                    </Text>
+                  </Box>
+                  <IconButton
+                    aria-label="Logout"
+                    title="Logout"
+                    as={IconLogout}
+                    ml="auto"
+                    variant="plain"
+                    colorPalette="red"
+                    onClick={() => signOut()}
+                  />
+                </HStack>
               </Popover.Body>
             </Popover.Content>
           </Popover.Positioner>
