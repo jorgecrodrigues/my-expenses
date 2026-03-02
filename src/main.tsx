@@ -3,14 +3,15 @@ import { createRoot } from "react-dom/client";
 import { ConvexReactClient } from "convex/react";
 import App from "@/App.tsx";
 import ErrorBoundary from "@/shared/components/ErrorBoundary.tsx";
-import "./index.css";
 import { Provider as UiProvider } from "@/components/ui/provider.tsx";
 import { Toaster } from "@/components/ui/toaster.tsx";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
+import "./index.css";
+
 const convexClient = new ConvexReactClient(
-  import.meta.env.VITE_CONVEX_URL as string
+  import.meta.env.VITE_CONVEX_URL as string,
 );
 
 createRoot(document.getElementById("root")!).render(
@@ -32,5 +33,5 @@ createRoot(document.getElementById("root")!).render(
         </UiProvider>
       </ConvexAuthProvider>
     </ErrorBoundary>
-  </StrictMode>
+  </StrictMode>,
 );

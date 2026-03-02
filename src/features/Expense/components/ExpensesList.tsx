@@ -17,11 +17,15 @@ import {
 } from "@chakra-ui/react";
 import CreateOrEditExpenseDialog from "../modals/CreateOrEditExpense";
 import RemoveExpenseDialog from "../modals/RemoveExpense";
-import type { Id } from "../../../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../../../convex/_generated/dataModel";
 import DuplicateExpenseDialog from "../modals/DuplicateExpense";
 import useIntersectionObserver from "@/shared/hooks/useIntersectionObserver";
 import ManageExpenseFiles from "../modals/ManageExpenseFiles";
-import { IconCalendarMinus, IconCalendarPlus } from "@tabler/icons-react";
+import {
+  IconArrowDown,
+  IconCalendarMinus,
+  IconCalendarPlus,
+} from "@tabler/icons-react";
 
 export default function ExpensesList() {
   const [search, setSearch] = React.useState<string>("");
@@ -29,6 +33,16 @@ export default function ExpensesList() {
     new Date().toISOString().split("T")[0],
   );
   const [perPage] = React.useState<number>(15);
+  const [sortBy, setSortBy] = React.useState<
+    | "name"
+    | "description"
+    | "amount"
+    | "date"
+    | "category"
+    | "_creationTime"
+    | undefined
+  >(undefined);
+  const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("desc");
 
   const { ref, entry } = useIntersectionObserver({
     threshold: 1.0,
@@ -92,6 +106,36 @@ export default function ExpensesList() {
     )
     ?.reduce((acc, expense) => acc + (expense.amount || 0), 0);
 
+  const onSortBy = (
+    field:
+      | "name"
+      | "description"
+      | "amount"
+      | "date"
+      | "category"
+      | "_creationTime",
+    order: "asc" | "desc" = "asc",
+  ) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder(order);
+    }
+  };
+
+  const handleSortBy = (a: Doc<"expenses">, b: Doc<"expenses">) => {
+    if (!sortBy) return 0;
+
+    const fieldA = a?.[sortBy] ?? a._creationTime;
+    const fieldB = b?.[sortBy] ?? b._creationTime;
+
+    if (fieldA < fieldB) return sortOrder === "asc" ? -1 : 1;
+    if (fieldA > fieldB) return sortOrder === "asc" ? 1 : -1;
+
+    return 0;
+  };
+
   React.useEffect(() => {
     if (entry?.isIntersecting && status === "CanLoadMore") {
       loadMore(perPage);
@@ -109,7 +153,7 @@ export default function ExpensesList() {
               setSearch(e.target.value.toLowerCase())
             }
           />
-          <Box mx={4} w="1px" h={5} bg="gray.500" />
+          <Box mx={4} width="1px" h={5} bg="gray.500" />
           <IconButton
             aria-label="Previous Month"
             title="Previous Month"
@@ -139,16 +183,89 @@ export default function ExpensesList() {
       <Table.Root size="sm" striped>
         <Table.Header>
           <Table.Row>
-            <Table.ColumnHeader>Name</Table.ColumnHeader>
-            <Table.ColumnHeader>Description</Table.ColumnHeader>
-            <Table.ColumnHeader>Amount</Table.ColumnHeader>
+            <Table.ColumnHeader>
+              <Button
+                aria-label="Sort by Name"
+                variant={sortBy === "name" ? "solid" : "subtle"}
+                size="sm"
+                onClick={() => onSortBy("name", "asc")}
+              >
+                Name
+                <IconArrowDown
+                  style={{
+                    transform: sortOrder === "asc" ? "rotate(180deg)" : "none",
+                    display: sortBy === "name" ? "inline" : "none",
+                  }}
+                />
+              </Button>
+            </Table.ColumnHeader>
+            <Table.ColumnHeader>
+              <Button
+                aria-label="Sort by Description"
+                variant={sortBy === "description" ? "solid" : "subtle"}
+                size="sm"
+                onClick={() => onSortBy("description", "asc")}
+              >
+                Description
+                <IconArrowDown
+                  style={{
+                    transform: sortOrder === "asc" ? "rotate(180deg)" : "none",
+                    display: sortBy === "description" ? "inline" : "none",
+                  }}
+                />
+              </Button>
+            </Table.ColumnHeader>
+            <Table.ColumnHeader>
+              <Button
+                aria-label="Sort by Amount"
+                variant={sortBy === "amount" ? "solid" : "subtle"}
+                size="sm"
+                onClick={() => onSortBy("amount", "asc")}
+              >
+                Amount
+                <IconArrowDown
+                  style={{
+                    transform: sortOrder === "asc" ? "rotate(180deg)" : "none",
+                    display: sortBy === "amount" ? "inline" : "none",
+                  }}
+                />
+              </Button>
+            </Table.ColumnHeader>
             <Table.ColumnHeader whiteSpace="nowrap">
               Date (Due date)
             </Table.ColumnHeader>
-            <Table.ColumnHeader>Category</Table.ColumnHeader>
+            <Table.ColumnHeader>
+              <Button
+                aria-label="Sort by Category"
+                variant={sortBy === "category" ? "solid" : "subtle"}
+                size="sm"
+                onClick={() => onSortBy("category", "asc")}
+              >
+                Category
+                <IconArrowDown
+                  style={{
+                    transform: sortOrder === "asc" ? "rotate(180deg)" : "none",
+                    display: sortBy === "category" ? "inline" : "none",
+                  }}
+                />
+              </Button>
+            </Table.ColumnHeader>
             <Table.ColumnHeader whiteSpace="nowrap">Paid At</Table.ColumnHeader>
             <Table.ColumnHeader whiteSpace="nowrap">
-              Created At
+              <Button
+                aria-label="Sort by Creation Time"
+                variant={sortBy === "_creationTime" ? "solid" : "subtle"}
+                size="sm"
+                onClick={() => onSortBy("_creationTime", "desc")}
+              >
+                Created At
+                <IconArrowDown
+                  style={{
+                    transform: sortOrder === "asc" ? "rotate(180deg)" : "none",
+                    display: sortBy === "_creationTime" ? "inline" : "none",
+                  }}
+                />
+              </Button>
             </Table.ColumnHeader>
             <Table.ColumnHeader w="1%">Actions</Table.ColumnHeader>
           </Table.Row>
@@ -161,8 +278,15 @@ export default function ExpensesList() {
                 expense.description?.toLowerCase()?.includes(search) ||
                 expense.category?.toLowerCase()?.includes(search),
             )
-            ?.map?.((expense) => (
-              <Table.Row key={expense._id}>
+            ?.sort(handleSortBy)
+            ?.map?.((expense, i: number) => (
+              <Table.Row
+                key={expense._id}
+                transform="translateY(-6px)"
+                opacity={0}
+                animation="slide-up-fade-in 0.2s ease-in-out forwards"
+                animationDelay={`${i * 0.05}s`}
+              >
                 <Table.Cell fontSize="xs">{expense?.name ?? "-"}</Table.Cell>
                 <Table.Cell fontSize="xs" color="fg.subtle">
                   {expense?.description ?? "-"}
