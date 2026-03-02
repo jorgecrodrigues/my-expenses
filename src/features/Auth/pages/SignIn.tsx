@@ -22,7 +22,6 @@ export default function SignIn() {
       gap={8}
     >
       <HStack
-        mb={{ base: 16, md: 0 }}
         w={{ base: "auto", md: "100%" }}
         h={{ base: "auto", md: "100%" }}
         bgGradient={{ base: "none", md: "to-bl" }}
@@ -35,8 +34,45 @@ export default function SignIn() {
         flexDirection={{ base: "column", sm: "row" }}
       >
         <BrandIcon boxSize={{ base: 14, sm: 16, md: 20 }} />
-        <Heading size={{ base: "2xl", lg: "4xl", "2xl": "6xl" }} color="fg">
-          My Expense Tracker
+        <Heading
+          size={{ base: "2xl", lg: "4xl", "2xl": "6xl" }}
+          color="fg"
+          display="flex"
+          alignItems="center"
+          gap={2}
+        >
+          <Text
+            data-state="open"
+            transform="translateY(20px)"
+            opacity={0}
+            _open={{
+              animation: "slide-up-fade-in 0.5s ease-in-out forwards",
+            }}
+          >
+            My
+          </Text>
+          <Text
+            data-state="open"
+            transform="translateY(20px)"
+            opacity={0}
+            _open={{
+              animation: "slide-up-fade-in 0.5s ease-in-out forwards",
+              animationDelay: "0.1s",
+            }}
+          >
+            Expense
+          </Text>
+          <Text
+            data-state="open"
+            transform="translateY(20px)"
+            opacity={0}
+            _open={{
+              animation: "slide-up-fade-in 0.5s ease-in-out forwards",
+              animationDelay: "0.2s",
+            }}
+          >
+            Tracker
+          </Text>
         </Heading>
       </HStack>
       <VStack
@@ -46,6 +82,13 @@ export default function SignIn() {
         justifyContent="center"
       >
         <Text
+          data-state="open"
+          transform="translateY(20px)"
+          opacity={0}
+          _open={{
+            animation: "slide-up-fade-in 0.5s ease-in-out forwards",
+            animationDelay: "0.3s",
+          }}
           fontSize={{ base: 18, sm: 20 }}
           fontWeight={500}
           textAlign="center"
@@ -54,6 +97,13 @@ export default function SignIn() {
         </Text>
         <Text
           mb={4}
+          data-state="open"
+          transform="translateY(20px)"
+          opacity={0}
+          _open={{
+            animation: "slide-up-fade-in 0.5s ease-in-out forwards",
+            animationDelay: "0.4s",
+          }}
           fontSize={{ base: 14, sm: 16 }}
           color="gray.500"
           textAlign="center"
@@ -61,9 +111,17 @@ export default function SignIn() {
           Use your GitHub account to sign in and manage your expenses.
         </Text>
         <Button
+          data-state="open"
+          transform="translateY(20px)"
+          opacity={0}
+          _open={{
+            animation: "slide-up-fade-in 0.5s ease-in-out forwards",
+            animationDelay: "0.5s",
+          }}
           variant="surface"
-          onClick={() => signIn("github")}
           w={{ base: "100%", sm: "auto" }}
+          whiteSpace="nowrap"
+          onClick={() => signIn("github")}
         >
           Sign in with GitHub <IconBrandGithub />
         </Button>
