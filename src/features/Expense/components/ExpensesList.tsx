@@ -34,8 +34,14 @@ export default function ExpensesList() {
   );
   const [perPage] = React.useState<number>(15);
   const [sortBy, setSortBy] = React.useState<
-    "name" | "description" | "amount" | "date" | "category" | "_creationTime"
-  >("date");
+    | "name"
+    | "description"
+    | "amount"
+    | "date"
+    | "category"
+    | "_creationTime"
+    | undefined
+  >(undefined);
   const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("desc");
 
   const { ref, entry } = useIntersectionObserver({
@@ -119,6 +125,8 @@ export default function ExpensesList() {
   };
 
   const handleSortBy = (a: Doc<"expenses">, b: Doc<"expenses">) => {
+    if (!sortBy) return 0;
+
     const fieldA = a?.[sortBy] ?? a._creationTime;
     const fieldB = b?.[sortBy] ?? b._creationTime;
 
