@@ -9,6 +9,8 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as bankAccountCards from "../bankAccountCards.js";
+import type * as bankAccounts from "../bankAccounts.js";
 import type * as expenses from "../expenses.js";
 import type * as expensesfiles from "../expensesfiles.js";
 import type * as http from "../http.js";
@@ -22,6 +24,8 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  bankAccountCards: typeof bankAccountCards;
+  bankAccounts: typeof bankAccounts;
   expenses: typeof expenses;
   expensesfiles: typeof expensesfiles;
   http: typeof http;

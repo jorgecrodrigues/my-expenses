@@ -72,3 +72,11 @@ export default defineConfig([
 ])
 ```
 
+
+## Seeding Convex with fake data
+
+To populate your Convex database with example bank accounts, run:
+```
+npx convex run bankAccounts:createFakeBankAccounts
+```
+
