@@ -11,4 +11,22 @@ export default defineConfig({
     },
   },
   plugins: [react()],
+  test: {
+    coverage: {
+      provider: "v8",
+      reportsDirectory: "coverage",
+      reporter: ["text", "html", "lcov"],
+      all: true,
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: [
+        "**/*.d.ts",
+        "**/*.test.{ts,tsx}",
+        "**/*.spec.{ts,tsx}",
+        "**/node_modules/**",
+        "**/dist/**",
+        "convex/**",
+        "coverage/**",
+      ],
+    },
+  },
 });
