@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "test": "vitest --run",
     "test:coverage": "vitest --run --coverage",
+    "coverage:badge": "node ./scripts/generate-coverage-badge.mjs",
     "preview": "vite preview",
     "convex:dev": "npx convex dev"
   },
