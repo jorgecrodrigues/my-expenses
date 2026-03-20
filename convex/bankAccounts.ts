@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { internalMutation } from "./_generated/server";
-import { Id } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
 
 // For development/testing purposes only ...
 
