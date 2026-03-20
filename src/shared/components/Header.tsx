@@ -30,8 +30,8 @@ export default function Header() {
       py={3}
       minH="3.75rem"
       backgroundColor="bg.panel"
-      borderBottomWidth="1px"
-      borderColor="border.subtle"
+      borderBottomWidth={1}
+      borderColor="border"
       justify="space-between"
       align="center"
       gap={3}
@@ -157,7 +157,7 @@ export default function Header() {
                     </VStack>
                   </HStack>
 
-                  <Box h="1px" bg="border.subtle" />
+                  <Box h="1px" bg="border" />
 
                   <Button
                     variant="ghost"
