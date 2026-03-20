@@ -30,6 +30,11 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { toaster } from "@/components/ui/toaster";
+import {
+  dialogBackdropMotion,
+  dialogContentMotion,
+  popoverContentMotion,
+} from "@/shared/animation/chakraMotion";
 
 type Expense = Doc<"expenses">;
 type ExpenseFile = Doc<"expensesFiles">;
@@ -127,9 +132,9 @@ export default function ManageExpenseFiles({
         </IconButton>
       </Dialog.Trigger>
       <Portal>
-        <Dialog.Backdrop bg="blackAlpha.800" />
+        <Dialog.Backdrop bg="blackAlpha.800" {...dialogBackdropMotion} />
         <Dialog.Positioner>
-          <Dialog.Content>
+          <Dialog.Content {...dialogContentMotion}>
             <Dialog.Header>
               <Dialog.Title alignItems="center" display="flex" gap={2}>
                 <Icon as={IconArchiveFilled} boxSize={8} />
@@ -379,7 +384,7 @@ function DeleteFile(props: DeleteFileProps) {
         </IconButton>
       </Popover.Trigger>
       <Popover.Positioner>
-        <Popover.Content>
+        <Popover.Content {...popoverContentMotion}>
           <Popover.CloseTrigger />
           <Popover.Arrow>
             <Popover.ArrowTip />

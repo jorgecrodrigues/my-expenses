@@ -17,6 +17,10 @@ import type { Doc, Id } from "../../../../convex/_generated/dataModel";
 import CategoryCombobox from "../components/CategoryCombobox";
 import BRLCurrencyInput from "../../../shared/components/BRLCurrencyInput";
 import { toaster } from "../../../components/ui/toaster";
+import {
+  dialogBackdropMotion,
+  dialogContentMotion,
+} from "@/shared/animation/chakraMotion";
 import { IconEdit, IconPlus } from "@tabler/icons-react";
 
 type Expense = Doc<"expenses">;
@@ -129,9 +133,13 @@ export default function CreateOrEditExpenseDialog(
         )}
       </Dialog.Trigger>
       <Portal>
-        <Dialog.Backdrop />
+        <Dialog.Backdrop {...dialogBackdropMotion} />
         <Dialog.Positioner>
-          <Dialog.Content as="form" onSubmit={handleSubmit}>
+          <Dialog.Content
+            as="form"
+            onSubmit={handleSubmit}
+            {...dialogContentMotion}
+          >
             <Dialog.Header>
               <Dialog.Title>
                 {expense ? "Edit Expense" : "Add New Expense"}

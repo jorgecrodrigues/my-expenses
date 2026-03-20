@@ -11,6 +11,10 @@ import { useMutation } from "convex/react";
 import { IconTrash } from "@tabler/icons-react";
 import type { Doc } from "../../../../convex/_generated/dataModel";
 import { api } from "../../../../convex/_generated/api";
+import {
+  dialogBackdropMotion,
+  dialogContentMotion,
+} from "@/shared/animation/chakraMotion";
 
 type Expense = Doc<"expenses">;
 
@@ -46,9 +50,9 @@ export default function RemoveExpenseDialog(props: RemoveExpenseProps) {
         </IconButton>
       </Dialog.Trigger>
       <Portal>
-        <Dialog.Backdrop />
+        <Dialog.Backdrop {...dialogBackdropMotion} />
         <Dialog.Positioner>
-          <Dialog.Content>
+          <Dialog.Content {...dialogContentMotion}>
             <Dialog.Header>
               <Dialog.Title>Confirm Deletion</Dialog.Title>
             </Dialog.Header>

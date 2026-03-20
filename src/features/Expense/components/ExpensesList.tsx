@@ -6,7 +6,6 @@ import {
   Badge,
   Box,
   Button,
-  Flex,
   HStack,
   IconButton,
   Input,
@@ -14,12 +13,8 @@ import {
   SkeletonCircle,
   Table,
   Text,
-  VStack,
 } from "@chakra-ui/react";
-import {
-  expenseTableRowStaggerEnter,
-  expensesShellEnter,
-} from "@/shared/animation/chakraMotion";
+import { listRowStaggerEnter } from "@/shared/animation/chakraMotion";
 import useIntersectionObserver from "@/shared/hooks/useIntersectionObserver";
 import { api } from "../../../../convex/_generated/api";
 import CreateOrEditExpenseDialog from "../modals/CreateOrEditExpense";
@@ -33,106 +28,21 @@ import {
   IconCalendarPlus,
 } from "@tabler/icons-react";
 
-const COL_SPAN = 8;
-const SKELETON_INITIAL_ROWS = 10;
-
-type ExpenseSortField =
-  | "name"
-  | "description"
-  | "amount"
-  | "category"
-  | "_creationTime";
-
-function matchesSearch(expense: Doc<"expenses">, q: string) {
-  return (
-    expense.name.toLowerCase().includes(q) ||
-    expense.description?.toLowerCase()?.includes(q) ||
-    expense.category?.toLowerCase()?.includes(q)
-  );
-}
-
-function ExpenseSortHeader(props: {
-  label: string;
-  field: ExpenseSortField;
-  defaultOrder?: "asc" | "desc";
-  sortBy: ExpenseSortField | undefined;
-  sortOrder: "asc" | "desc";
-  onSort: (field: ExpenseSortField, defaultOrder: "asc" | "desc") => void;
-}) {
-  const {
-    label,
-    field,
-    defaultOrder = "asc",
-    sortBy,
-    sortOrder,
-    onSort,
-  } = props;
-  const active = sortBy === field;
-  return (
-    <Table.ColumnHeader
-      px={3}
-      py={3}
-      bg="bg.muted"
-      borderBottomWidth="1px"
-    >
-      <Button
-        aria-label={`Sort by ${label}`}
-        variant={active ? "subtle" : "ghost"}
-        colorPalette={active ? "teal" : "gray"}
-        size="2xs"
-        fontWeight="semibold"
-        letterSpacing="wider"
-        textTransform="uppercase"
-        fontSize="10px"
-        h="auto"
-        minH={0}
-        py={1}
-        px={2}
-        onClick={() => onSort(field, defaultOrder)}
-      >
-        <HStack gap={1}>
-          <span>{label}</span>
-          <IconArrowDown
-            size={14}
-            style={{
-              transform: sortOrder === "asc" ? "rotate(180deg)" : "none",
-              display: active ? "inline" : "none",
-            }}
-          />
-        </HStack>
-      </Button>
-    </Table.ColumnHeader>
-  );
-}
-
-function StaticTableHead(props: { children: React.ReactNode; nowrap?: boolean }) {
-  return (
-    <Table.ColumnHeader
-      px={3}
-      py={3}
-      bg="bg.muted"
-      borderBottomWidth="1px"
-      fontSize="10px"
-      fontWeight="semibold"
-      letterSpacing="wider"
-      textTransform="uppercase"
-      color="fg.muted"
-      whiteSpace={props.nowrap ? "nowrap" : undefined}
-    >
-      {props.children}
-    </Table.ColumnHeader>
-  );
-}
-
 export default function ExpensesList() {
   const [search, setSearch] = React.useState<string>("");
   const [date, setDate] = React.useState<string | undefined>(
     new Date().toISOString().split("T")[0],
   );
   const [perPage] = React.useState<number>(15);
-  const [sortBy, setSortBy] = React.useState<ExpenseSortField | undefined>(
-    undefined,
-  );
+  const [sortBy, setSortBy] = React.useState<
+    | "name"
+    | "description"
+    | "amount"
+    | "date"
+    | "category"
+    | "_creationTime"
+    | undefined
+  >(undefined);
   const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("desc");
 
   const { ref, entry } = useIntersectionObserver({
@@ -167,39 +77,44 @@ export default function ExpensesList() {
     setDate(nextMonth.toISOString().split("T")[0]);
   };
 
-  const handleSortBy = React.useCallback(
-    (a: Doc<"expenses">, b: Doc<"expenses">) => {
-      if (!sortBy) return 0;
-
-      const fieldA = a?.[sortBy] ?? a._creationTime;
-      const fieldB = b?.[sortBy] ?? b._creationTime;
-
-      if (fieldA < fieldB) return sortOrder === "asc" ? -1 : 1;
-      if (fieldA > fieldB) return sortOrder === "asc" ? 1 : -1;
-
-      return 0;
-    },
-    [sortBy, sortOrder],
-  );
-
-  const filteredExpenses = React.useMemo(() => {
-    if (!results) return [];
-    return results.filter((e) => matchesSearch(e, search)).sort(handleSortBy);
-  }, [results, search, handleSortBy]);
-
-  const total = filteredExpenses.reduce(
-    (acc, expense) => acc + (expense.amount || 0),
-    0,
-  );
-  const paidTotal = filteredExpenses
-    .filter((e) => e.paidAt)
-    .reduce((acc, expense) => acc + (expense.amount || 0), 0);
-  const unpaidTotal = filteredExpenses
-    .filter((e) => !e.paidAt)
-    .reduce((acc, expense) => acc + (expense.amount || 0), 0);
+  // Calculate totals based on filtered results
+  const total: number = results
+    ?.filter(
+      (expense) =>
+        expense.name.toLowerCase().includes(search) ||
+        expense.description?.toLowerCase()?.includes(search) ||
+        expense.category?.toLowerCase()?.includes(search),
+    )
+    ?.reduce((acc, expense) => acc + (expense.amount || 0), 0);
+  // Calculate paid and unpaid totals based on filtered results
+  const paidTotal: number = results
+    ?.filter(
+      (expense) =>
+        expense.paidAt &&
+        (expense.name.toLowerCase().includes(search) ||
+          expense.description?.toLowerCase()?.includes(search) ||
+          expense.category?.toLowerCase()?.includes(search)),
+    )
+    ?.reduce((acc, expense) => acc + (expense.amount || 0), 0);
+  // Calculate paid and unpaid totals based on filtered results
+  const unpaidTotal: number = results
+    ?.filter(
+      (expense) =>
+        !expense.paidAt &&
+        (expense.name.toLowerCase().includes(search) ||
+          expense.description?.toLowerCase()?.includes(search) ||
+          expense.category?.toLowerCase()?.includes(search)),
+    )
+    ?.reduce((acc, expense) => acc + (expense.amount || 0), 0);
 
   const onSortBy = (
-    field: ExpenseSortField,
+    field:
+      | "name"
+      | "description"
+      | "amount"
+      | "date"
+      | "category"
+      | "_creationTime",
     order: "asc" | "desc" = "asc",
   ) => {
     if (sortBy === field) {
@@ -210,390 +125,339 @@ export default function ExpensesList() {
     }
   };
 
+  const handleSortBy = (a: Doc<"expenses">, b: Doc<"expenses">) => {
+    if (!sortBy) return 0;
+
+    const fieldA = a?.[sortBy] ?? a._creationTime;
+    const fieldB = b?.[sortBy] ?? b._creationTime;
+
+    if (fieldA < fieldB) return sortOrder === "asc" ? -1 : 1;
+    if (fieldA > fieldB) return sortOrder === "asc" ? 1 : -1;
+
+    return 0;
+  };
+
   React.useEffect(() => {
     if (entry?.isIntersecting && status === "CanLoadMore") {
       loadMore(perPage);
     }
   }, [entry?.isIntersecting, status, loadMore, perPage]);
 
-  const showTotals =
-    results &&
-    results.length > 0 &&
-    status !== "LoadingFirstPage" &&
-    filteredExpenses.length > 0;
-
   return (
-    <Box {...expensesShellEnter({ durationMs: 420 })}>
-      <VStack gap={5} align="stretch">
-        <Flex
-          flexWrap="wrap"
-          gap={3}
-          align={{ base: "stretch", md: "center" }}
-          justify="space-between"
-          p={{ base: 3, md: 4 }}
-          borderWidth="1px"
-          borderRadius="xl"
-          bg="bg.subtle"
-          boxShadow="sm"
-        >
+    <>
+      <HStack mb={4} justifyContent="flex-end" alignItems="center">
+        <HStack>
           <Input
-            flex={{ base: "1 1 100%", md: "1 1 220px" }}
-            maxW={{ md: "280px" }}
             variant="outline"
-            placeholder="Search expenses…"
+            placeholder="Search expenses..."
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setSearch(e.target.value.toLowerCase())
             }
           />
-          <HStack flexWrap="wrap" gap={2} justify={{ base: "flex-start", md: "flex-end" }}>
-            <IconButton
-              aria-label="Previous month"
-              title="Previous month"
-              variant="outline"
-              size="sm"
-              onClick={handlePreviousMonth}
+          <Box mx={4} width="1px" h={5} bg="gray.500" />
+          <IconButton
+            aria-label="Previous Month"
+            title="Previous Month"
+            variant="outline"
+            onClick={handlePreviousMonth}
+          >
+            <IconCalendarMinus />
+          </IconButton>
+          <IconButton
+            aria-label="Next Month"
+            title="Next Month"
+            variant="outline"
+            onClick={handleNextMonth}
+          >
+            <IconCalendarPlus />
+          </IconButton>
+          <Input
+            type="date"
+            variant="outline"
+            value={date || ""}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </HStack>
+        <Box mx={4} w="1px" h={5} bg="gray.500" />
+        <CreateOrEditExpenseDialog />
+      </HStack>
+      <Table.Root size="sm" striped>
+        <Table.Header>
+          <Table.Row>
+            <Table.ColumnHeader>
+              <Button
+                aria-label="Sort by Name"
+                variant={sortBy === "name" ? "solid" : "subtle"}
+                size="sm"
+                onClick={() => onSortBy("name", "asc")}
+              >
+                Name
+                <IconArrowDown
+                  style={{
+                    transform: sortOrder === "asc" ? "rotate(180deg)" : "none",
+                    display: sortBy === "name" ? "inline" : "none",
+                  }}
+                />
+              </Button>
+            </Table.ColumnHeader>
+            <Table.ColumnHeader>
+              <Button
+                aria-label="Sort by Description"
+                variant={sortBy === "description" ? "solid" : "subtle"}
+                size="sm"
+                onClick={() => onSortBy("description", "asc")}
+              >
+                Description
+                <IconArrowDown
+                  style={{
+                    transform: sortOrder === "asc" ? "rotate(180deg)" : "none",
+                    display: sortBy === "description" ? "inline" : "none",
+                  }}
+                />
+              </Button>
+            </Table.ColumnHeader>
+            <Table.ColumnHeader>
+              <Button
+                aria-label="Sort by Amount"
+                variant={sortBy === "amount" ? "solid" : "subtle"}
+                size="sm"
+                onClick={() => onSortBy("amount", "asc")}
+              >
+                Amount
+                <IconArrowDown
+                  style={{
+                    transform: sortOrder === "asc" ? "rotate(180deg)" : "none",
+                    display: sortBy === "amount" ? "inline" : "none",
+                  }}
+                />
+              </Button>
+            </Table.ColumnHeader>
+            <Table.ColumnHeader whiteSpace="nowrap">
+              Date (Due date)
+            </Table.ColumnHeader>
+            <Table.ColumnHeader>
+              <Button
+                aria-label="Sort by Category"
+                variant={sortBy === "category" ? "solid" : "subtle"}
+                size="sm"
+                onClick={() => onSortBy("category", "asc")}
+              >
+                Category
+                <IconArrowDown
+                  style={{
+                    transform: sortOrder === "asc" ? "rotate(180deg)" : "none",
+                    display: sortBy === "category" ? "inline" : "none",
+                  }}
+                />
+              </Button>
+            </Table.ColumnHeader>
+            <Table.ColumnHeader whiteSpace="nowrap">Paid At</Table.ColumnHeader>
+            <Table.ColumnHeader whiteSpace="nowrap">
+              <Button
+                aria-label="Sort by Creation Time"
+                variant={sortBy === "_creationTime" ? "solid" : "subtle"}
+                size="sm"
+                onClick={() => onSortBy("_creationTime", "desc")}
+              >
+                Created At
+                <IconArrowDown
+                  style={{
+                    transform: sortOrder === "asc" ? "rotate(180deg)" : "none",
+                    display: sortBy === "_creationTime" ? "inline" : "none",
+                  }}
+                />
+              </Button>
+            </Table.ColumnHeader>
+            <Table.ColumnHeader w="1%">Actions</Table.ColumnHeader>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {results
+            ?.filter(
+              (expense) =>
+                expense.name.toLowerCase().includes(search) ||
+                expense.description?.toLowerCase()?.includes(search) ||
+                expense.category?.toLowerCase()?.includes(search),
+            )
+            ?.sort(handleSortBy)
+            ?.map?.((expense, i: number) => (
+              <Table.Row key={expense._id} {...listRowStaggerEnter(i)}>
+                <Table.Cell fontSize="xs">{expense?.name ?? "-"}</Table.Cell>
+                <Table.Cell fontSize="xs" color="fg.subtle">
+                  {expense?.description ?? "-"}
+                </Table.Cell>
+                <Table.Cell fontSize="xs" color="fg.subtle">
+                  {expense?.amount
+                    ? expense.amount.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })
+                    : "-"}
+                </Table.Cell>
+                <Table.Cell
+                  title={
+                    new Date(expense.date) < new Date()
+                      ? "This expense is overdue"
+                      : "This expense is not overdue"
+                  }
+                  fontSize="xs"
+                  color={
+                    expense.paidAt
+                      ? "fg.subtle"
+                      : new Date(expense.date) < new Date()
+                        ? "fg.error"
+                        : "fg.subtle"
+                  }
+                  whiteSpace="nowrap"
+                >
+                  {new Date(expense.date).toLocaleString("pt-BR", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+                </Table.Cell>
+                <Table.Cell fontSize="xs" color="fg.subtle">
+                  {expense?.category ?? "-"}
+                </Table.Cell>
+                <Table.Cell
+                  fontSize="xs"
+                  color={expense?.paidAt ? "fg.success" : "fg.subtle"}
+                >
+                  {expense?.paidAt
+                    ? new Date(expense.paidAt).toLocaleString("pt-BR", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })
+                    : "-"}
+                </Table.Cell>
+                <Table.Cell fontSize="xs" color="fg.subtle">
+                  {expense?._creationTime
+                    ? new Date(expense._creationTime).toLocaleString("pt-BR", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })
+                    : "-"}
+                </Table.Cell>
+                <Table.Cell>
+                  <HStack>
+                    <DuplicateExpenseDialog expense={expense} />
+                    <ManageExpenseFiles expense={expense} />
+                    <CreateOrEditExpenseDialog expense={expense} />
+                    <RemoveExpenseDialog expense={expense} />
+                  </HStack>
+                </Table.Cell>
+              </Table.Row>
+            ))}
+
+          <Table.Row>
+            <Table.Cell
+              colSpan={8}
+              fontSize="lg"
+              fontWeight="bold"
+              textAlign="left"
             >
-              <IconCalendarMinus size={18} />
-            </IconButton>
-            <Input
-              type="date"
-              variant="outline"
-              size="sm"
-              maxW="160px"
-              value={date || ""}
-              onChange={(e) => setDate(e.target.value)}
-            />
-            <IconButton
-              aria-label="Next month"
-              title="Next month"
-              variant="outline"
-              size="sm"
-              onClick={handleNextMonth}
-            >
-              <IconCalendarPlus size={18} />
-            </IconButton>
-            <CreateOrEditExpenseDialog />
-          </HStack>
-        </Flex>
-
-        <Box
-          borderWidth="1px"
-          borderRadius="xl"
-          overflow="hidden"
-          bg="bg.subtle"
-          boxShadow="sm"
-        >
-          <Table.ScrollArea>
-            <Table.Root size="sm" variant="line" interactive stickyHeader>
-              <Table.Header>
-                <Table.Row>
-                  <ExpenseSortHeader
-                    label="Name"
-                    field="name"
-                    sortBy={sortBy}
-                    sortOrder={sortOrder}
-                    onSort={onSortBy}
-                  />
-                  <ExpenseSortHeader
-                    label="Description"
-                    field="description"
-                    sortBy={sortBy}
-                    sortOrder={sortOrder}
-                    onSort={onSortBy}
-                  />
-                  <ExpenseSortHeader
-                    label="Amount"
-                    field="amount"
-                    sortBy={sortBy}
-                    sortOrder={sortOrder}
-                    onSort={onSortBy}
-                  />
-                  <StaticTableHead nowrap>Due date</StaticTableHead>
-                  <ExpenseSortHeader
-                    label="Category"
-                    field="category"
-                    sortBy={sortBy}
-                    sortOrder={sortOrder}
-                    onSort={onSortBy}
-                  />
-                  <StaticTableHead nowrap>Payment</StaticTableHead>
-                  <ExpenseSortHeader
-                    label="Created"
-                    field="_creationTime"
-                    defaultOrder="desc"
-                    sortBy={sortBy}
-                    sortOrder={sortOrder}
-                    onSort={onSortBy}
-                  />
-                  <Table.ColumnHeader
-                    w="1%"
-                    px={3}
-                    py={3}
-                    bg="bg.muted"
-                    borderBottomWidth="1px"
-                    fontSize="10px"
-                    fontWeight="semibold"
-                    letterSpacing="wider"
-                    textTransform="uppercase"
-                    color="fg.muted"
-                    textAlign="end"
-                  >
-                    Actions
-                  </Table.ColumnHeader>
-                </Table.Row>
-              </Table.Header>
-
-              <Table.Body>
-                {status === "LoadingFirstPage"
-                  ? Array.from({ length: SKELETON_INITIAL_ROWS }).map(
-                      (_, index) => (
-                        <Table.Row key={`sk-${index}`}>
-                          {Array.from({ length: 7 }).map((_, cellIndex) => (
-                            <Table.Cell key={cellIndex} py={3}>
-                              <Skeleton variant="shine" height="18px" />
-                            </Table.Cell>
-                          ))}
-                          <Table.Cell py={3}>
-                            <HStack gap={2} justify="flex-end">
-                              <SkeletonCircle size={7} />
-                              <SkeletonCircle size={7} />
-                              <SkeletonCircle size={7} />
-                              <SkeletonCircle size={7} />
-                            </HStack>
-                          </Table.Cell>
-                        </Table.Row>
-                      ),
-                    )
-                  : null}
-
-                {!results || status === "LoadingFirstPage"
-                  ? null
-                  : filteredExpenses.map((expense, i) => {
-                      const overdue =
-                        !expense.paidAt &&
-                        new Date(expense.date) < new Date();
-                      return (
-                        <Table.Row
-                          key={expense._id}
-                          {...expenseTableRowStaggerEnter(i)}
-                          transition="background-color 0.16s ease"
-                        >
-                          <Table.Cell
-                            fontSize="sm"
-                            fontWeight="medium"
-                            borderLeftWidth={overdue ? "3px" : undefined}
-                            borderLeftColor={overdue ? "fg.error" : undefined}
-                            py={3}
-                          >
-                            {expense?.name ?? "—"}
-                          </Table.Cell>
-                          <Table.Cell
-                            fontSize="sm"
-                            color="fg.muted"
-                            maxW="220px"
-                            lineClamp={2}
-                            py={3}
-                          >
-                            {expense?.description ?? "—"}
-                          </Table.Cell>
-                          <Table.Cell
-                            fontSize="sm"
-                            fontVariantNumeric="tabular-nums"
-                            textAlign="right"
-                            fontWeight="medium"
-                            py={3}
-                          >
-                            {expense?.amount
-                              ? expense.amount.toLocaleString("pt-BR", {
-                                  style: "currency",
-                                  currency: "BRL",
-                                })
-                              : "—"}
-                          </Table.Cell>
-                          <Table.Cell
-                            title={
-                              overdue
-                                ? "Overdue"
-                                : "Not overdue"
-                            }
-                            fontSize="sm"
-                            color={
-                              expense.paidAt
-                                ? "fg.muted"
-                                : overdue
-                                  ? "fg.error"
-                                  : "fg.muted"
-                            }
-                            whiteSpace="nowrap"
-                            py={3}
-                          >
-                            {new Date(expense.date).toLocaleString("pt-BR", {
-                              dateStyle: "medium",
-                              timeStyle: "short",
-                            })}
-                          </Table.Cell>
-                          <Table.Cell fontSize="sm" color="fg.muted" py={3}>
-                            {expense?.category ?? "—"}
-                          </Table.Cell>
-                          <Table.Cell py={3}>
-                            <VStack align="start" gap={1}>
-                              <Badge
-                                size="sm"
-                                variant="subtle"
-                                colorPalette={
-                                  expense.paidAt ? "green" : "gray"
-                                }
-                              >
-                                {expense.paidAt ? "Paid" : "Open"}
-                              </Badge>
-                              {expense.paidAt ? (
-                                <Text fontSize="xs" color="fg.muted">
-                                  {new Date(expense.paidAt).toLocaleString(
-                                    "pt-BR",
-                                    {
-                                      dateStyle: "medium",
-                                      timeStyle: "short",
-                                    },
-                                  )}
-                                </Text>
-                              ) : null}
-                            </VStack>
-                          </Table.Cell>
-                          <Table.Cell
-                            fontSize="xs"
-                            color="fg.muted"
-                            whiteSpace="nowrap"
-                            py={3}
-                          >
-                            {expense?._creationTime
-                              ? new Date(
-                                  expense._creationTime,
-                                ).toLocaleString("pt-BR", {
-                                  dateStyle: "medium",
-                                  timeStyle: "short",
-                                })
-                              : "—"}
-                          </Table.Cell>
-                          <Table.Cell py={3}>
-                            <HStack gap={1} justify="flex-end" flexWrap="wrap">
-                              <DuplicateExpenseDialog expense={expense} />
-                              <ManageExpenseFiles expense={expense} />
-                              <CreateOrEditExpenseDialog expense={expense} />
-                              <RemoveExpenseDialog expense={expense} />
-                            </HStack>
-                          </Table.Cell>
-                        </Table.Row>
-                      );
+              <HStack spaceX={8} align="baseline">
+                <Text color="fg.accent" fontSize="md" fontWeight="bold">
+                  Total:
+                  <Text as="span" ml={2} color="fg.accent">
+                    {total.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
                     })}
+                  </Text>
+                </Text>
+                <Text color="fg.error" fontSize="xs" fontWeight="semibold">
+                  Unpaid:
+                  <Text as="span" ml={2} color="fg.error">
+                    {unpaidTotal.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })}
+                  </Text>
+                </Text>
+                <Text color="fg.success" fontSize="xs" fontWeight="semibold">
+                  Paid:
+                  <Text as="span" ml={2} color="fg.success">
+                    {paidTotal.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })}
+                  </Text>
+                </Text>
+              </HStack>
+            </Table.Cell>
+          </Table.Row>
 
-                {results && results.length === 0 && status !== "LoadingFirstPage" ? (
-                  <Table.Row>
-                    <Table.Cell colSpan={COL_SPAN} py={14} textAlign="center">
-                      <Text color="fg.muted">
-                        No expenses for this month. Add one to get started.
-                      </Text>
+          {status === "LoadingFirstPage" ? (
+            <>
+              {Array.from({ length: 50 }).map((_, index) => (
+                <Table.Row key={index}>
+                  {Array.from({ length: 7 }).map((_, cellIndex) => (
+                    <Table.Cell key={cellIndex}>
+                      <Skeleton variant="shine" height="20px" />
                     </Table.Cell>
-                  </Table.Row>
-                ) : null}
+                  ))}
+                  <Table.Cell>
+                    <HStack gap={7}>
+                      <SkeletonCircle size={6} />
+                      <SkeletonCircle size={6} />
+                      <SkeletonCircle size={6} />
+                      <SkeletonCircle size={6} />
+                    </HStack>
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </>
+          ) : null}
 
-                {results &&
-                results.length > 0 &&
-                filteredExpenses.length === 0 &&
-                status !== "LoadingFirstPage" ? (
-                  <Table.Row>
-                    <Table.Cell colSpan={COL_SPAN} py={14} textAlign="center">
-                      <Text color="fg.muted">
-                        No expenses match your search.
-                      </Text>
-                    </Table.Cell>
-                  </Table.Row>
-                ) : null}
-
-                {status === "LoadingMore" ? (
-                  <Table.Row>
-                    {Array.from({ length: 7 }).map((_, cellIndex) => (
-                      <Table.Cell key={cellIndex} py={3}>
-                        <Skeleton variant="shine" height="18px" />
-                      </Table.Cell>
-                    ))}
-                    <Table.Cell py={3}>
-                      <HStack gap={2} justify="flex-end">
-                        <SkeletonCircle size={7} />
-                        <SkeletonCircle size={7} />
-                        <SkeletonCircle size={7} />
-                        <SkeletonCircle size={7} />
-                      </HStack>
-                    </Table.Cell>
-                  </Table.Row>
-                ) : null}
-              </Table.Body>
-
-              {showTotals ? (
-                <Table.Footer>
-                  <Table.Row bg="bg.muted">
-                    <Table.Cell colSpan={COL_SPAN} py={4} px={4}>
-                      <Flex
-                        flexWrap="wrap"
-                        gap={{ base: 3, md: 8 }}
-                        align="baseline"
-                      >
-                        <Text fontSize="md" fontWeight="bold" color="fg">
-                          Total
-                          <Text as="span" ml={2} fontWeight="semibold">
-                            {total.toLocaleString("pt-BR", {
-                              style: "currency",
-                              currency: "BRL",
-                            })}
-                          </Text>
-                        </Text>
-                        <Text fontSize="sm" fontWeight="semibold" color="fg.error">
-                          Unpaid
-                          <Text as="span" ml={2} fontWeight="medium">
-                            {unpaidTotal.toLocaleString("pt-BR", {
-                              style: "currency",
-                              currency: "BRL",
-                            })}
-                          </Text>
-                        </Text>
-                        <Text fontSize="sm" fontWeight="semibold" color="fg.success">
-                          Paid
-                          <Text as="span" ml={2} fontWeight="medium">
-                            {paidTotal.toLocaleString("pt-BR", {
-                              style: "currency",
-                              currency: "BRL",
-                            })}
-                          </Text>
-                        </Text>
-                      </Flex>
-                    </Table.Cell>
-                  </Table.Row>
-                </Table.Footer>
-              ) : null}
-            </Table.Root>
-          </Table.ScrollArea>
-        </Box>
-
-        <VStack gap={3} align="stretch">
           {status === "CanLoadMore" ? (
-            <Button
-              variant="outline"
-              alignSelf="center"
-              size="sm"
-              onClick={() => loadMore(perPage)}
-            >
-              Load more
-            </Button>
+            <Table.Row>
+              <Table.Cell colSpan={8}>
+                <Button variant="surface" onClick={() => loadMore(perPage)}>
+                  Load More
+                </Button>
+              </Table.Cell>
+            </Table.Row>
           ) : null}
 
-          {status === "Exhausted" && results && results.length > 0 ? (
-            <Text fontSize="sm" color="fg.muted" textAlign="center">
-              All expenses loaded for this view.
-            </Text>
+          {status === "LoadingMore" ? (
+            <Table.Row>
+              {Array.from({ length: 7 }).map((_, cellIndex) => (
+                <Table.Cell key={cellIndex}>
+                  <Skeleton variant="shine" height="20px" />
+                </Table.Cell>
+              ))}
+              <Table.Cell>
+                <HStack gap={7}>
+                  <SkeletonCircle size={6} />
+                  <SkeletonCircle size={6} />
+                  <SkeletonCircle size={6} />
+                  <SkeletonCircle size={6} />
+                </HStack>
+              </Table.Cell>
+            </Table.Row>
           ) : null}
-        </VStack>
 
-        <div ref={ref} />
-      </VStack>
-    </Box>
+          {status === "Exhausted" ? (
+            <Table.Row>
+              <Table.Cell colSpan={8}>
+                <Badge variant="outline" size="md">
+                  No more expenses to load.
+                </Badge>
+              </Table.Cell>
+            </Table.Row>
+          ) : null}
+
+          {results && results.length === 0 ? (
+            <Table.Row>
+              <Table.Cell colSpan={8}>
+                No expenses found. Please add a new expense.
+              </Table.Cell>
+            </Table.Row>
+          ) : null}
+        </Table.Body>
+      </Table.Root>
+
+      <div ref={ref} />
+    </>
   );
 }
