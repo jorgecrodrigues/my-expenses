@@ -1,74 +1,109 @@
-# React + TypeScript + Vite
+# My Expenses
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Coverage](./coverage-badge.svg)
 
-Currently, two official plugins are available:
+A personal expense tracker: record spending by month, explore dashboards with charts, attach files to expenses, and keep data scoped per user. The app is a **React + TypeScript** SPA backed by **Convex** (database, real-time queries, file storage, and authentication).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+- **Authentication** — Sign-in via Convex Auth (`@convex-dev/auth`); routes are protected until the user is authenticated.
+- **Expense list** — Paginated list with search, month navigation, sorting, and actions (create, edit, duplicate, remove, manage attachments).
+- **Dashboard** — Month/year views and optional category filter; charts built with Chakra UI Charts / Recharts.
+- **Attachments** — Files linked to expenses (`expensesFiles` + Convex storage).
+- **Bank accounts (dev data)** — Optional seed mutations for sample bank accounts and cards.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech stack
 
-## Expanding the ESLint configuration
+| Layer | Choice |
+|-------|--------|
+| UI | React 19, Chakra UI v3, Emotion |
+| Routing | [wouter](https://github.com/molefrog/wouter) |
+| Backend | [Convex](https://convex.dev/) (queries, mutations, actions, auth, storage) |
+| Auth | `@convex-dev/auth` with `@auth/core` |
+| Build | Vite 7, TypeScript |
+| Tests | Vitest, Testing Library, jsdom |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Project layout
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+  features/          # Feature screens (Auth, Dashboard, Expense, Home, About)
+  shared/            # Shared layout, hooks, animation helpers, utilities
+  components/ui/     # App-level UI primitives (e.g. toaster)
+convex/              # Schema, auth, expenses, users, files, bank account helpers
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The `@/` path alias maps to `src/*` (see `vite.config.ts` and `tsconfig.app.json`). Vite also defines a `~` alias to `./convex` for bundler resolution if you use it in imports.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Routes
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Path | Page |
+|------|------|
+| `/` | Home |
+| `/dashboard` | Dashboard (default period) |
+| `/dashboard/month/:month/year/:year` | Dashboard for a month/year |
+| `/dashboard/month/:month/year/:year/category/:category` | Same + category filter |
+| `/expenses` | Expense list |
+| `/about` | About |
+
+Unauthenticated users see the sign-in screen instead of the main app shell.
+
+## Prerequisites
+
+- **Node.js** (LTS recommended)
+- A **Convex** project (see [Convex quickstart](https://docs.convex.dev))
+
+## Development
+
+Install dependencies:
+
+```bash
+npm install
 ```
 
+Run the Vite dev server and Convex in separate terminals (or use your IDE to run both):
+
+```bash
+npm run dev
+```
+
+```bash
+npm run convex:dev
+```
+
+Use `npx convex dev` if you prefer invoking Convex directly. Configure your Convex deployment and environment (e.g. `CONVEX_SITE_URL` for auth) in the [Convex dashboard](https://dashboard.convex.dev) as required by `@convex-dev/auth`.
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start Vite dev server (HMR) |
+| `npm run build` | Typecheck (`tsc -b`) and production build |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | ESLint |
+| `npm run test` | Vitest (single run) |
+| `npm run test:coverage` | Vitest with coverage |
+| `npm run coverage:badge` | Regenerate `coverage-badge.svg` from coverage output |
+| `npm run convex:dev` | Convex dev sync (`npx convex dev`) |
+
+## Convex
+
+- **Schema** — `convex/schema.ts`: tables for users, expenses, expense files, bank accounts, and cards (plus auth tables from `@convex-dev/auth`).
+- **API** — Functions live under `convex/`; generated types are in `convex/_generated/`.
+- **Local dev** — Do not deploy to production while iterating; use `convex dev` for local development.
+
+### Seeding sample bank data
+
+To populate the database with example bank accounts (development/testing):
+
+```bash
+npx convex run bankAccounts:createFakeBankAccounts
+```
+
+## Testing
+
+Vitest is configured in `vite.config.ts` (use `vitest/config`’s `defineConfig` so the `test` block is typed). Coverage options target `src/**/*.{ts,tsx}` with common exclusions for `node_modules`, `dist`, and Convex.
+
+---
+
+*Originally generated from the Vite + React + TS template; project-specific behavior is documented above.*

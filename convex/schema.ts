@@ -45,4 +45,22 @@ export default defineSchema({
       v.union(v.literal("invoice"), v.literal("receipt"), v.literal("other"))
     ),
   }).index("by_filename", ["filename"]),
+  bankAccounts: defineTable({
+    userId: v.id("users"),
+    accountName: v.optional(v.string()),
+    accountAmount: v.optional(v.number()),
+    accountNumber: v.optional(v.string()),
+    accountType: v.optional(v.string()),
+    accountAgency: v.optional(v.string()),
+    accountDigit: v.optional(v.string()),
+  }),
+  bankAccountCards: defineTable({
+    userId: v.id("users"),
+    bankAccountId: v.id("bankAccounts"),
+    cardNumber: v.optional(v.string()),
+    cardType: v.optional(v.string()),
+    cardExpirationDate: v.optional(v.string()),
+    cardSecurityCode: v.optional(v.string()),
+    cardHolderName: v.optional(v.string()),
+  }),
 });

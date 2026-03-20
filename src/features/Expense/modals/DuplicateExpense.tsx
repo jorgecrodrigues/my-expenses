@@ -19,6 +19,10 @@ import type { Doc, Id } from "../../../../convex/_generated/dataModel";
 import CategoryCombobox from "../components/CategoryCombobox";
 import BRLCurrencyInput from "../../../shared/components/BRLCurrencyInput";
 import { toaster } from "../../../components/ui/toaster";
+import {
+  dialogBackdropMotion,
+  dialogContentMotion,
+} from "@/shared/animation/chakraMotion";
 import { IconCopyPlusFilled } from "@tabler/icons-react";
 
 type Expense = Doc<"expenses">;
@@ -119,9 +123,13 @@ export default function DuplicateExpenseDialog(props: DuplicateExpenseProps) {
         </IconButton>
       </Dialog.Trigger>
       <Portal>
-        <Dialog.Backdrop />
+        <Dialog.Backdrop {...dialogBackdropMotion} />
         <Dialog.Positioner>
-          <Dialog.Content as="form" onSubmit={handleSubmit}>
+          <Dialog.Content
+            as="form"
+            onSubmit={handleSubmit}
+            {...dialogContentMotion}
+          >
             <Dialog.Header>
               <Dialog.Title>Duplicate Expense</Dialog.Title>
             </Dialog.Header>

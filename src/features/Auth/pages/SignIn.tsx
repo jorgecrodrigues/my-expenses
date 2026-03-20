@@ -9,6 +9,7 @@ import {
 import { useAuthActions } from "@convex-dev/auth/react";
 import { IconBrandGithub } from "@tabler/icons-react";
 import { BrandIcon } from "@/shared/components/icons/BrandIcon";
+import { pageStaggerEnter } from "@/shared/animation/chakraMotion";
 
 export default function SignIn() {
   const { signIn } = useAuthActions();
@@ -41,38 +42,9 @@ export default function SignIn() {
           alignItems="center"
           gap={2}
         >
-          <Text
-            data-state="open"
-            transform="translateY(20px)"
-            opacity={0}
-            _open={{
-              animation: "slide-up-fade-in 0.5s ease-in-out forwards",
-            }}
-          >
-            My
-          </Text>
-          <Text
-            data-state="open"
-            transform="translateY(20px)"
-            opacity={0}
-            _open={{
-              animation: "slide-up-fade-in 0.5s ease-in-out forwards",
-              animationDelay: "0.1s",
-            }}
-          >
-            Expense
-          </Text>
-          <Text
-            data-state="open"
-            transform="translateY(20px)"
-            opacity={0}
-            _open={{
-              animation: "slide-up-fade-in 0.5s ease-in-out forwards",
-              animationDelay: "0.2s",
-            }}
-          >
-            Tracker
-          </Text>
+          <Text {...pageStaggerEnter(0)}>My</Text>
+          <Text {...pageStaggerEnter(100)}>Expense</Text>
+          <Text {...pageStaggerEnter(200)}>Tracker</Text>
         </Heading>
       </HStack>
       <VStack
@@ -82,13 +54,7 @@ export default function SignIn() {
         justifyContent="center"
       >
         <Text
-          data-state="open"
-          transform="translateY(20px)"
-          opacity={0}
-          _open={{
-            animation: "slide-up-fade-in 0.5s ease-in-out forwards",
-            animationDelay: "0.3s",
-          }}
+          {...pageStaggerEnter(300)}
           fontSize={{ base: 18, sm: 20 }}
           fontWeight={500}
           textAlign="center"
@@ -97,13 +63,7 @@ export default function SignIn() {
         </Text>
         <Text
           mb={4}
-          data-state="open"
-          transform="translateY(20px)"
-          opacity={0}
-          _open={{
-            animation: "slide-up-fade-in 0.5s ease-in-out forwards",
-            animationDelay: "0.4s",
-          }}
+          {...pageStaggerEnter(400)}
           fontSize={{ base: 14, sm: 16 }}
           color="gray.500"
           textAlign="center"
@@ -111,13 +71,7 @@ export default function SignIn() {
           Use your GitHub account to sign in and manage your expenses.
         </Text>
         <Button
-          data-state="open"
-          transform="translateY(20px)"
-          opacity={0}
-          _open={{
-            animation: "slide-up-fade-in 0.5s ease-in-out forwards",
-            animationDelay: "0.5s",
-          }}
+          {...pageStaggerEnter(500)}
           variant="surface"
           w={{ base: "100%", sm: "auto" }}
           whiteSpace="nowrap"

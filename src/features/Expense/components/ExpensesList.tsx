@@ -2,7 +2,6 @@
 
 import React from "react";
 import { usePaginatedQuery, useQuery } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
 import {
   Badge,
   Box,
@@ -15,11 +14,13 @@ import {
   Table,
   Text,
 } from "@chakra-ui/react";
+import { listRowStaggerEnter } from "@/shared/animation/chakraMotion";
+import useIntersectionObserver from "@/shared/hooks/useIntersectionObserver";
+import { api } from "../../../../convex/_generated/api";
 import CreateOrEditExpenseDialog from "../modals/CreateOrEditExpense";
 import RemoveExpenseDialog from "../modals/RemoveExpense";
 import type { Doc, Id } from "../../../../convex/_generated/dataModel";
 import DuplicateExpenseDialog from "../modals/DuplicateExpense";
-import useIntersectionObserver from "@/shared/hooks/useIntersectionObserver";
 import ManageExpenseFiles from "../modals/ManageExpenseFiles";
 import {
   IconArrowDown,
@@ -280,13 +281,7 @@ export default function ExpensesList() {
             )
             ?.sort(handleSortBy)
             ?.map?.((expense, i: number) => (
-              <Table.Row
-                key={expense._id}
-                transform="translateY(-6px)"
-                opacity={0}
-                animation="slide-up-fade-in 0.2s ease-in-out forwards"
-                animationDelay={`${i * 0.05}s`}
-              >
+              <Table.Row key={expense._id} {...listRowStaggerEnter(i)}>
                 <Table.Cell fontSize="xs">{expense?.name ?? "-"}</Table.Cell>
                 <Table.Cell fontSize="xs" color="fg.subtle">
                   {expense?.description ?? "-"}
