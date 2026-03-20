@@ -6,13 +6,6 @@ import "@testing-library/jest-dom/vitest";
 
 let authState: "loading" | "authenticated" | "unauthenticated" = "loading";
 
-vi.mock("@chakra-ui/react", () => ({
-  Box: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Center: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}));
-
 vi.mock("convex/react", () => ({
   AuthLoading: ({ children }: { children: React.ReactNode }) =>
     authState === "loading" ? <>{children}</> : null,
@@ -20,6 +13,14 @@ vi.mock("convex/react", () => ({
     authState === "authenticated" ? <>{children}</> : null,
   Unauthenticated: ({ children }: { children: React.ReactNode }) =>
     authState === "unauthenticated" ? <>{children}</> : null,
+}));
+
+vi.mock("@chakra-ui/react", () => ({
+  createToaster: () => ({}),
+  Box: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Center: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 vi.mock("@/shared/components/Logo", () => ({
@@ -114,4 +115,3 @@ describe("App", () => {
     expect(screen.getByText("SignIn")).toBeInTheDocument();
   });
 });
-

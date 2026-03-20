@@ -104,7 +104,7 @@ export default function DashboardPage() {
           <IconCalendarMonth />
         </IconButton>
       </HStack>
-      <VStack spaceY={8} align="stretch">
+      <VStack spaceY={14} align="stretch">
         <Box>
           <CategoryBarSegment />
         </Box>

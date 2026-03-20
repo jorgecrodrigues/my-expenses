@@ -39,12 +39,6 @@ type NormalizedSeries = {
   stackId: string;
 };
 
-// Number of skeleton cards to show.
-const SUBCATEGORY_SKELETON_CARD_COUNT = 4;
-
-// Labels for the subcategory rows.
-const SUBCATEGORY_ROW_LABELS = ["Paid", "Left to pay", "Total"] as const;
-
 // Relative bar heights (12 months) to mimic a stacked monthly chart.
 const CHART_SKELETON_BAR_HEIGHTS = [
   38, 58, 44, 72, 50, 66, 36, 78, 48, 62, 54, 70,
@@ -52,6 +46,12 @@ const CHART_SKELETON_BAR_HEIGHTS = [
 
 // Width of the y-axis.
 const CHART_SKELETON_Y_AXIS_W = "2.5rem";
+
+// Number of skeleton cards to show.
+const SUBCATEGORY_SKELETON_CARD_COUNT = 4;
+
+// Labels for the subcategory rows.
+const SUBCATEGORY_ROW_LABELS = ["Paid", "Left to pay", "Total"] as const;
 
 function CategoryBarChartSkeleton() {
   return (
@@ -320,31 +320,15 @@ export default function CategoryDetail() {
     series: normalizedSeries,
   });
 
+  console.log("Normalized Data:", normalizedData);
+  console.log("Normalized Series:", normalizedSeries);
+  console.log("Chart Data:", chart.data);
+
   return (
-    <>
+    <VStack gap={4} align="stretch">
       <Text fontSize="md">
         Breakdown of expenses by month for <b>{params.category}</b> in{" "}
         {date ? date.getFullYear() : "All Time"}
-      </Text>
-
-      <Text textAlign="right" fontSize="sm">
-        Paid{" "}
-        <Span fontWeight="bold" color="green.300">
-          {(totalByCategory - totalByCategoryExceptPaid).toLocaleString(
-            "pt-BR",
-            {
-              style: "currency",
-              currency: "BRL",
-            },
-          )}
-        </Span>
-        {" from "}
-        <Span fontWeight="bold" color="red.300">
-          {totalByCategory.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          })}
-        </Span>
       </Text>
 
       <VStack mb={8} justify="center" align="center" w="full">
@@ -352,7 +336,12 @@ export default function CategoryDetail() {
           <CategoryBarChartSkeleton />
         ) : (
           <Chart.Root h={280} w="full" chart={chart}>
-            <BarChart data={chart.data} barCategoryGap={4} stackOffset="positive">
+            <BarChart
+              data={chart.data}
+              barCategoryGap={4}
+              stackOffset="positive"
+              responsive
+            >
               <CartesianGrid
                 stroke={chart.color("border.emphasized")}
                 strokeDasharray="3 3"
@@ -360,15 +349,15 @@ export default function CategoryDetail() {
               />
 
               <XAxis
-                axisLine={true}
-                tickLine={true}
+                axisLine
+                tickLine
                 dataKey={chart.key("month")}
                 stroke={chart.color("border")}
               />
 
               <YAxis
-                axisLine={true}
-                tickLine={true}
+                axisLine
+                tickLine
                 tickFormatter={chart.formatNumber({
                   style: "currency",
                   currency: "BRL",
@@ -390,6 +379,7 @@ export default function CategoryDetail() {
                   fill={chart.color(item.color)}
                   stroke={chart.color(item.color)}
                   stackId={item.stackId}
+                  isAnimationActive={false}
                 >
                   <LabelList
                     dataKey={chart.key(item.name)}
@@ -407,24 +397,54 @@ export default function CategoryDetail() {
             </BarChart>
           </Chart.Root>
         )}
-        <Text fontSize="sm" color="gray.500">
-          Data for{" "}
-          {date
-            ? date.toLocaleDateString("pt-BR", {
-              year: "numeric",
-            })
-            : "All Time"}
-        </Text>
+
+        <VStack align="stretch" gap={2} w="full">
+          <Progress.Root
+            value={totalByCategory - totalByCategoryExceptPaid}
+            max={totalByCategory}
+            w="full"
+            colorPalette="gray"
+            size="md"
+            variant="subtle"
+          >
+            <HStack>
+              <Progress.ValueText>
+                {(totalByCategory - totalByCategoryExceptPaid).toLocaleString(
+                  "pt-BR",
+                  {
+                    style: "currency",
+                    currency: "BRL",
+                  },
+                )}{" "}
+                paid {" • "}
+                {totalByCategoryExceptPaid.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}{" "}
+                left to pay
+              </Progress.ValueText>
+              <Progress.Track borderRadius="full" flex={1}>
+                <Progress.Range borderRadius="full" />
+              </Progress.Track>
+              <Progress.ValueText />
+            </HStack>
+          </Progress.Root>
+        </VStack>
       </VStack>
 
       {data === undefined ? (
         <SubcategoryGridSkeleton />
       ) : subcategoryRows.length > 0 ? (
         <VStack align="stretch" gap={3} w="full" mt={2}>
-          <Text fontSize="sm" fontWeight="semibold" color="fg" textAlign="right">
+          <Text
+            fontSize="sm"
+            fontWeight="semibold"
+            color="fg"
+            textAlign="right"
+          >
             By expense name
           </Text>
-          <SimpleGrid minChildWidth="250px" gap={3} w="full">
+          <SimpleGrid minChildWidth={250} gap={3} w="full">
             {subcategoryRows.map(({ name, total, paid }) => {
               const leftToPay = Math.max(0, total - paid);
               return (
@@ -447,12 +467,13 @@ export default function CategoryDetail() {
                   >
                     {name}
                   </Text>
+
                   <VStack align="stretch" gap={1.5}>
                     <HStack justify="space-between" gap={2}>
                       <Text fontSize="xs" color="fg.muted">
                         Paid
                       </Text>
-                      <Span fontSize="sm" fontWeight="semibold" color="green.300">
+                      <Span fontSize="xs" color="fg.success">
                         {paid.toLocaleString("pt-BR", {
                           style: "currency",
                           currency: "BRL",
@@ -463,7 +484,7 @@ export default function CategoryDetail() {
                       <Text fontSize="xs" color="fg.muted">
                         Left to pay
                       </Text>
-                      <Span fontSize="sm" fontWeight="semibold" color="orange.300">
+                      <Span fontSize="xs" color="fg.warning">
                         {leftToPay.toLocaleString("pt-BR", {
                           style: "currency",
                           currency: "BRL",
@@ -474,7 +495,7 @@ export default function CategoryDetail() {
                       <Text fontSize="xs" color="fg.muted">
                         Total
                       </Text>
-                      <Span fontSize="sm" fontWeight="semibold" color="red.300">
+                      <Span fontSize="xs" color="fg.error">
                         {total.toLocaleString("pt-BR", {
                           style: "currency",
                           currency: "BRL",
@@ -484,25 +505,30 @@ export default function CategoryDetail() {
                   </VStack>
 
                   <Progress.Root
+                    variant="subtle"
                     value={paid}
                     max={total}
                     w="full"
                     mt={2.5}
-                    size="sm"
-                    colorPalette="green"
+                    size="xs"
+                    colorPalette="gray"
                     title={`${Math.round((paid / total) * 100)}% paid`}
                   >
-                    <Progress.Track borderRadius="full">
-                      <Progress.Range borderRadius="full" />
-                    </Progress.Track>
+                    <HStack>
+                      <Progress.Track borderRadius="full" flex={1}>
+                        <Progress.Range borderRadius="full" />
+                      </Progress.Track>
+                      <Progress.ValueText>
+                        {Math.round((paid / total) * 100)}%
+                      </Progress.ValueText>
+                    </HStack>
                   </Progress.Root>
-
                 </Box>
               );
             })}
           </SimpleGrid>
         </VStack>
       ) : null}
-    </>
+    </VStack>
   );
 }
