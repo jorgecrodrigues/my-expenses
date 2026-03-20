@@ -75,7 +75,7 @@ export default function Sidebar() {
       gap={0}
       backgroundColor="bg.panel"
       borderRightWidth="1px"
-      borderColor="border.subtle"
+      borderColor="border"
       align="stretch"
       transitionProperty="width, min-width, max-width, padding"
       transitionDuration="0.2s"
