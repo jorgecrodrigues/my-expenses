@@ -1,0 +1,24 @@
+---
+description: Convex function standards (auth, validation, pagination)
+globs: convex/**/*.ts
+alwaysApply: false
+---
+
+# Convex standards
+
+- In every public `query`/`mutation`/`action`, validate `args` with `convex/values` (`v.*` validators).
+- Await every promise inside Convex handlers (do not rely on implicit promise behavior).
+- Authentication:
+  - Never trust `args.userId` by itself.
+  - For public functions, verify the caller using `getAuthUserId(ctx)` (or the `viewer` pattern in `convex/users.ts`) and ensure it matches what you’re reading/writing.
+- Error handling:
+  - Throw for exceptional/unexpected states.
+  - Return `null` for expected “not found / no data” cases when appropriate.
+- Keep Convex wrappers thin:
+  - Keep `query`/`mutation` definitions mostly as glue; put real logic in helper TypeScript functions where possible.
+- Pagination:
+  - For potentially large result sets, prefer cursor pagination (`ctx.db.query(...).paginate(...)`) over `.collect()`.
+- Caching/reactivity:
+  - Do not use `Date.now()` inside *queries*.
+- Internal utilities:
+  - Development/testing helpers should be `internalMutation` (not exposed as public API).

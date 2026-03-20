@@ -1,0 +1,20 @@
+---
+description: Project-wide conventions for this codebase
+alwaysApply: true
+---
+
+# My Expenses - core guidance
+
+- This project is a `React + TypeScript + Vite` frontend with `Chakra UI` components.
+- Backend is implemented with `Convex` (queries/mutations/actions live in `convex/` and auth is configured in `convex/auth.ts`).
+- Use the `@/` path alias for imports (maps to `src/*`); avoid deep relative imports.
+- Organize frontend code by intent:
+  - Feature code goes under `src/features/<FeatureName>/...`
+  - Reusable UI/components/utilities go under `src/shared/...`
+  - Shared UI primitives go under `src/components/ui/...`
+- The app tracks expenses and shows dashboard views (month/year and optionally category).
+- Routing is handled with `wouter` in `src/App.tsx`, with these main routes:
+  - `/` => `HomePage`
+  - `/dashboard` and `/dashboard/month/:month/year/:year(/category/:category)` => `DashboardPage`
+  - `/expenses` => `ExpensePage`
+  - `/about` => `AboutPage`
