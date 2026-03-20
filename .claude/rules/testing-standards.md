@@ -1,0 +1,73 @@
+# Testing Standards
+
+Apply when writing or modifying test files (`src/**/*.test.{ts,tsx}`).
+
+## Framework & imports
+
+- **Runner:** Vitest. Import `describe`, `it`, `expect`, `vi`, `beforeEach`, `afterEach` from `vitest`.
+- **DOM tests:** `render`, `screen`, `fireEvent`, `cleanup`, `act`, `renderHook` from `@testing-library/react`.
+- **DOM matchers:** always import `"@testing-library/jest-dom/vitest"` in component/hook test files.
+
+## File placement & naming
+
+- Co-locate test files with the source file: `Foo.tsx` → `Foo.test.tsx`.
+- Use `.test.ts` for pure utilities, `.test.tsx` for anything that renders JSX.
+
+## jsdom directive
+
+- Add `// @vitest-environment jsdom` as the very first line of every `.test.tsx` file and any `.test.ts` file that accesses DOM APIs.
+- Pure utility tests (no DOM) do **not** need this directive.
+
+## Mocking
+
+- Call `vi.mock(...)` at the **top of the file**, before any `import` of the module under test. Vitest hoists these calls automatically.
+- Mock Chakra UI components with minimal HTML wrappers — only stub the components actually used by the component under test:
+  ```ts
+  vi.mock("@chakra-ui/react", () => ({
+    Button: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) =>
+      <button onClick={onClick}>{children}</button>,
+    Box: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  }));
+  ```
+- Mock Convex auth state with a module-level variable so individual tests can flip it:
+  ```ts
+  let authState: "loading" | "authenticated" | "unauthenticated" = "loading";
+
+  vi.mock("convex/react", () => ({
+    AuthLoading: ({ children }: { children: React.ReactNode }) =>
+      authState === "loading" ? <>{children}</> : null,
+    Authenticated: ({ children }: { children: React.ReactNode }) =>
+      authState === "authenticated" ? <>{children}</> : null,
+    Unauthenticated: ({ children }: { children: React.ReactNode }) =>
+      authState === "unauthenticated" ? <>{children}</> : null,
+  }));
+  ```
+- Mock Convex hooks (`useQuery`, `useMutation`, `usePaginatedQuery`) with `vi.fn()` returning appropriate shapes.
+- Mock `@tabler/icons-react` icons as simple `<span>` elements when they appear in the component tree.
+
+## Component tests
+
+- Always call `cleanup()` in `afterEach` to avoid test bleed.
+- Reset route state in `beforeEach` with `window.history.pushState({}, "", "/")` when routing matters.
+- Query the DOM with `screen` queries — prefer semantic queries in this order: `getByRole` → `getByLabelText` → `getByText`.
+- Trigger user interactions with `fireEvent` (or `userEvent` for more realistic sequences).
+- Do **not** use snapshot tests.
+
+## Hook tests
+
+- Use `renderHook` + `act` from `@testing-library/react`.
+- Mock browser APIs (e.g. `IntersectionObserver`) by assigning to `(globalThis as any).ApiName`.
+- Clean up mock assignments in `afterEach` when they could leak between tests.
+
+## Pure utility tests
+
+- No rendering, no mocking — import the function directly and assert with `expect`.
+- Cover the happy path, edge cases (empty input, boundary values), and known error paths.
+
+## Running tests
+
+```bash
+npm run test                        # all tests, single run
+npx vitest run src/path/to/Foo.test.tsx  # single file
+npm run test:coverage               # with v8 coverage report
+```
