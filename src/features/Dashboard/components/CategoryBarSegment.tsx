@@ -119,7 +119,13 @@ export default function CategoryBarSegment() {
 
   return (
     <>
-      <HStack justify="space-between" mb={2} align="center" flexWrap="wrap" gap={2}>
+      <HStack
+        justify="space-between"
+        mb={2}
+        align="center"
+        flexWrap="wrap"
+        gap={2}
+      >
         <Text fontSize="lg" fontWeight="bold">
           Expenses by Category
         </Text>
@@ -133,12 +139,10 @@ export default function CategoryBarSegment() {
         ) : (
           <Text fontSize="lg" fontWeight="bold">
             Total:{" "}
-            {chart
-              .getTotal("value")
-              ?.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              })}
+            {chart.getTotal("value")?.toLocaleString("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            })}
           </Text>
         )}
       </HStack>
@@ -172,16 +176,6 @@ export default function CategoryBarSegment() {
           <BarSegment.Legend showPercent />
         </BarSegment.Root>
       )}
-
-      <Text fontSize="sm" color="gray.500" mx="auto" w="fit-content" mt={2}>
-        Data for{" "}
-        {date
-          ? date.toLocaleDateString("en-US", {
-              month: "long",
-              year: "numeric",
-            })
-          : today.toLocaleDateString("en-US", { year: "numeric" })}
-      </Text>
     </>
   );
 }
