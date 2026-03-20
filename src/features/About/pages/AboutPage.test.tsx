@@ -1,27 +1,42 @@
 // @vitest-environment jsdom
-import React from "react";
+import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 
 import AboutPage from "./AboutPage";
 
+function renderAbout() {
+  return render(
+    <ChakraProvider value={defaultSystem}>
+      <AboutPage />
+    </ChakraProvider>,
+  );
+}
+
 describe("AboutPage", () => {
   it("renders the main heading and core sections", () => {
-    render(<AboutPage />);
+    renderAbout();
 
     expect(
-      screen.getByRole("heading", { name: "About Us", level: 1 }),
+      screen.getByRole("heading", { name: "About", level: 1 }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "About the Application" }),
+      screen.getByRole("heading", { name: "What you can do" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Our Mission" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Contact Us" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Built with" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Why we built it" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Contact" }),
+    ).toBeInTheDocument();
   });
 
   it("renders a mailto contact link", () => {
-    render(<AboutPage />);
+    renderAbout();
 
     const links = screen.getAllByRole("link", {
       name: "jorgerodrigues9@outlook.com",
@@ -32,4 +47,3 @@ describe("AboutPage", () => {
     }
   });
 });
-
