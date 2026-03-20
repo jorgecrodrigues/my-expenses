@@ -1,0 +1,29 @@
+# Frontend Standards
+
+Apply when working in `src/**/*.{ts,tsx}`.
+
+## Components
+- Use functional React components only.
+- Feature-scoped code lives in `src/features/<FeatureName>/` (pages, components, modals, hooks).
+- Reusable cross-feature code lives in `src/shared/`.
+- Low-level UI primitives live in `src/components/ui/`.
+- Routing is handled by `wouter` in `src/App.tsx` via `Route`/`Switch`.
+
+## Styling & UI
+- Use Chakra UI components for layout and forms to match existing patterns.
+- Prefer CSS animations (keyframes + Chakra style props) over JS-driven animation libraries.
+- For disclosure components (dialog, popover, etc.) use `_open` / `_closed` pseudo props to style enter/exit states via `data-state`.
+- Define `@keyframes` (e.g. `fade-in`, `scale-in`) and reference via `animationName` / `animationDuration`.
+- Compose multiple animations: `animationName: "fade-in, scale-in"` (comma-separated).
+
+## Imports
+- Always use `@/` path alias (maps to `src/`); avoid deep relative imports.
+- Use `~/` for convex imports (maps to `convex/`).
+
+## Data fetching
+- Use `useQuery()` / `usePaginatedQuery()` from `convex/react` — no manual fetch calls.
+- Use `useMutation()` for writes.
+- Infinite scroll uses `usePaginatedQuery` + `useIntersectionObserver` hook from `src/shared/hooks/`.
+
+## CRUD patterns
+- Implement create/edit/delete operations as modal dialogs inside `features/<Feature>/modals/`.
