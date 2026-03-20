@@ -3,6 +3,7 @@ import Header from "@/shared/components/Header";
 import Sidebar from "@/shared/components/Sidebar";
 import { Route, Switch } from "wouter";
 import ExpensePage from "@/features/Expense/pages/ExpensePage";
+import BankAccountPage from "@/features/BankAccount/pages/BankAccountPage";
 import { AuthLoading, Authenticated, Unauthenticated } from "convex/react";
 import SingIn from "@/features/Auth/pages/SignIn";
 import { Box, Center } from "@chakra-ui/react";
@@ -37,6 +38,7 @@ export default function App() {
                   component={DashboardPage}
                 />
                 <Route path="/expenses" component={ExpensePage} />
+                <Route path="/bank-accounts" component={BankAccountPage} />
                 <Route path="/about" component={AboutPage} />
                 <Route>
                   <h2>404 - Page Not Found</h2>

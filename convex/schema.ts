@@ -50,17 +50,33 @@ export default defineSchema({
     accountName: v.optional(v.string()),
     accountAmount: v.optional(v.number()),
     accountNumber: v.optional(v.string()),
-    accountType: v.optional(v.string()),
+    accountType: v.optional(
+      v.union(
+        v.literal("checking"),
+        v.literal("savings"),
+        v.literal("credit"),
+        v.literal("debit")
+      )
+    ),
     accountAgency: v.optional(v.string()),
     accountDigit: v.optional(v.string()),
-  }),
+  }).index("by_userId", ["userId"]),
   bankAccountCards: defineTable({
     userId: v.id("users"),
     bankAccountId: v.id("bankAccounts"),
     cardNumber: v.optional(v.string()),
-    cardType: v.optional(v.string()),
+    cardType: v.optional(
+      v.union(
+        v.literal("visa"),
+        v.literal("mastercard"),
+        v.literal("american express"),
+        v.literal("discover")
+      )
+    ),
     cardExpirationDate: v.optional(v.string()),
     cardSecurityCode: v.optional(v.string()),
     cardHolderName: v.optional(v.string()),
-  }),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_bankAccountId", ["bankAccountId"]),
 });

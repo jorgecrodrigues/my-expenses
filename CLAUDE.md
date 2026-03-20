@@ -50,3 +50,4 @@ Detailed coding standards live in `.claude/rules/`:
 - [`convex-standards.md`](.claude/rules/convex-standards.md) — arg validation, auth, error handling, pagination, reactivity
 - [`frontend-standards.md`](.claude/rules/frontend-standards.md) — component structure, Chakra UI, animations, data fetching, CRUD patterns
 - [`dev-workflow.md`](.claude/rules/dev-workflow.md) — running servers, checks to run, single test commands
+- [`testing-standards.md`](.claude/rules/testing-standards.md) — Vitest + Testing Library patterns, mocking Convex/Chakra, hook tests, utility tests
