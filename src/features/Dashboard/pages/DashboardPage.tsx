@@ -2,23 +2,22 @@ import {
   Box,
   Heading,
   HStack,
-  IconButton,
-  Input,
   Text,
   VStack,
+  type DatePickerValueChangeDetails,
 } from "@chakra-ui/react";
 import CategoryBarSegment from "../components/CategoryBarSegment";
 import CategoryDetail from "../components/CategoryDetail";
-import {
-  IconCalendarMinus,
-  IconCalendarMonth,
-  IconCalendarPlus,
-} from "@tabler/icons-react";
 import { useLocation, useParams } from "wouter";
 import React from "react";
+import CustomMonthPicker from "@/shared/components/CustomMonthPicker";
 
 export default function DashboardPage() {
-  const params = useParams<{ month?: string; year?: string }>();
+  const params = useParams<{
+    month?: string;
+    year?: string;
+    category?: string;
+  }>();
 
   const date: Date = React.useMemo(() => {
     const month = params.month ? parseInt(params.month, 10) - 1 : undefined;
@@ -33,77 +32,25 @@ export default function DashboardPage() {
 
   const [, setLocation] = useLocation();
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedDate = new Date(e.target.value);
-    if (isNaN(selectedDate.getTime())) {
-      setLocation(`/dashboard`);
-      return;
-    }
-    setLocation(
-      `/dashboard/month/${selectedDate.getMonth() + 1}/year/${selectedDate.getFullYear()}`,
-    );
-  };
+  const handleDateChange = (details: DatePickerValueChangeDetails) => {
+    const month = details.value?.[0]?.month ?? date.getMonth() + 1;
+    const year = details.value?.[0]?.year ?? date.getFullYear();
 
-  const handlePreviousMonth = () => {
-    const prevMonth = new Date(
-      date.getFullYear(),
-      date.getMonth() - 1,
-      date.getDate(),
-    );
     setLocation(
-      `/dashboard/month/${prevMonth.getMonth() + 1}/year/${prevMonth.getFullYear()}`,
-    );
-  };
-
-  const handleNextMonth = () => {
-    const nextMonth = new Date(
-      date.getFullYear(),
-      date.getMonth() + 1,
-      date.getDate(),
-    );
-    setLocation(
-      `/dashboard/month/${nextMonth.getMonth() + 1}/year/${nextMonth.getFullYear()}`,
+      `/dashboard/month/${month}/year/${year}${params.category ? `/category/${params.category}` : ""}`,
     );
   };
 
   return (
     <>
-      <VStack mb={4} align="flex-start" gap="md">
-        <Heading>Dashboard</Heading>
-        <Text>Welcome to the Dashboard!</Text>
-      </VStack>
-      <HStack mb={8} align="flex-end" justify="flex-end">
-        <IconButton
-          aria-label="Previous Month"
-          title="Previous Month"
-          variant="outline"
-          onClick={handlePreviousMonth}
-        >
-          <IconCalendarMinus />
-        </IconButton>
-        <IconButton
-          aria-label="Next Month"
-          title="Next Month"
-          variant="outline"
-          onClick={handleNextMonth}
-        >
-          <IconCalendarPlus />
-        </IconButton>
-        <Input
-          type="date"
-          w={200}
-          value={date.toISOString().slice(0, 10)}
-          onChange={handleDateChange}
-        />
-        <IconButton
-          aria-label="All Time"
-          title="All Time"
-          variant="outline"
-          onClick={() => setLocation("/dashboard")}
-        >
-          <IconCalendarMonth />
-        </IconButton>
+      <HStack mb={8} gap="md" justify="space-between" align="flex-end">
+        <VStack align="flex-start" gap="md">
+          <Heading>Dashboard</Heading>
+          <Text>Welcome to the Dashboard!</Text>
+        </VStack>
+        <CustomMonthPicker onValueChange={handleDateChange} />
       </HStack>
+
       <VStack spaceY={14} align="stretch">
         <Box>
           <CategoryBarSegment />
