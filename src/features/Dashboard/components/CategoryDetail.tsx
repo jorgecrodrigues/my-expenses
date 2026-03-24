@@ -320,10 +320,6 @@ export default function CategoryDetail() {
     series: normalizedSeries,
   });
 
-  console.log("Normalized Data:", normalizedData);
-  console.log("Normalized Series:", normalizedSeries);
-  console.log("Chart Data:", chart.data);
-
   return (
     <VStack gap={4} align="stretch">
       <Text fontSize="md">
@@ -400,8 +396,8 @@ export default function CategoryDetail() {
 
         <VStack align="stretch" gap={2} w="full">
           <Progress.Root
-            value={totalByCategory - totalByCategoryExceptPaid}
-            max={totalByCategory}
+            value={totalByCategory - totalByCategoryExceptPaid || 0}
+            max={totalByCategory || 100}
             w="full"
             colorPalette="gray"
             size="md"
