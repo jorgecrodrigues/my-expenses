@@ -4,11 +4,11 @@ import React from "react";
 import { usePaginatedQuery, useQuery } from "convex/react";
 import {
   Badge,
-  Box,
   Button,
   HStack,
   Input,
   parseDate,
+  Separator,
   Skeleton,
   SkeletonCircle,
   Table,
@@ -152,25 +152,25 @@ export default function ExpensesList() {
   return (
     <>
       <HStack mb={4} justifyContent="flex-end" alignItems="center">
-        <HStack>
-          <Input
-            variant="outline"
-            placeholder="Search expenses..."
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setSearch(e.target.value.toLowerCase())
-            }
-          />
-          <Box mx={4} width="1px" h={5} bg="gray.500" />
-          <CustomMonthPicker
-            value={date ? [parseDate(date)] : undefined}
-            onPreviousMonth={handlePreviousMonth}
-            onNextMonth={handleNextMonth}
-            onValueChange={handleDateChange}
-          />
-        </HStack>
-        <Box mx={4} w="1px" h={5} bg="gray.500" />
+        <Input
+          flex={1}
+          variant="outline"
+          placeholder="Search expenses..."
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setSearch(e.target.value.toLowerCase())
+          }
+        />
+        <Separator orientation="vertical" mx={4} height={4} />
+        <CustomMonthPicker
+          value={date ? [parseDate(date)] : undefined}
+          onPreviousMonth={handlePreviousMonth}
+          onNextMonth={handleNextMonth}
+          onValueChange={handleDateChange}
+        />
+        <Separator orientation="vertical" mx={4} height={4} />
         <CreateOrEditExpenseDialog />
       </HStack>
+
       <Table.Root size="sm" striped>
         <Table.Header>
           <Table.Row>

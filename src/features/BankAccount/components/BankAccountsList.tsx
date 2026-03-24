@@ -4,10 +4,10 @@ import React from "react";
 import { usePaginatedQuery } from "convex/react";
 import {
   Badge,
-  Box,
   Button,
   HStack,
   Input,
+  Separator,
   Skeleton,
   SkeletonCircle,
   Table,
@@ -101,7 +101,7 @@ export default function BankAccountsList() {
             setSearch(e.target.value.toLowerCase())
           }
         />
-        <Box mx={4} w="1px" h={5} bg="gray.500" />
+        <Separator orientation="vertical" mx={4} height={4} />
         <CreateOrEditBankAccountDialog />
       </HStack>
 
