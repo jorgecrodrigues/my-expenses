@@ -102,6 +102,7 @@ vi.mock("@chakra-ui/react", () => ({
   Text: ({ children }: { children: React.ReactNode }) => (
     <span>{children}</span>
   ),
+  Separator: () => <div />,
 }));
 
 // --- Fixtures ---
@@ -245,9 +246,7 @@ describe("BankAccountsList", () => {
         loadMore: loadMoreMock,
       };
       render(<BankAccountsList />);
-      expect(
-        screen.getByText("No more accounts to load."),
-      ).toBeInTheDocument();
+      expect(screen.getByText("No more accounts to load.")).toBeInTheDocument();
     });
 
     it("shows skeleton row while loading more", () => {
@@ -324,8 +323,18 @@ describe("BankAccountsList", () => {
     beforeEach(() => {
       paginatedQueryState = {
         results: [
-          makeAccount({ _id: "a1", accountName: "ZZZ Account", accountAmount: 100, _creationTime: 2000 }),
-          makeAccount({ _id: "a2", accountName: "AAA Account", accountAmount: 500, _creationTime: 1000 }),
+          makeAccount({
+            _id: "a1",
+            accountName: "ZZZ Account",
+            accountAmount: 100,
+            _creationTime: 2000,
+          }),
+          makeAccount({
+            _id: "a2",
+            accountName: "AAA Account",
+            accountAmount: 500,
+            _creationTime: 1000,
+          }),
         ],
         status: "Exhausted",
         loadMore: loadMoreMock,
@@ -362,8 +371,18 @@ describe("BankAccountsList", () => {
     it("falls back to _creationTime when the sort field is undefined (line 63)", () => {
       paginatedQueryState = {
         results: [
-          makeAccount({ _id: "a1", accountName: "Newer", accountAmount: undefined, _creationTime: 2000 }),
-          makeAccount({ _id: "a2", accountName: "Older",  accountAmount: undefined, _creationTime: 1000 }),
+          makeAccount({
+            _id: "a1",
+            accountName: "Newer",
+            accountAmount: undefined,
+            _creationTime: 2000,
+          }),
+          makeAccount({
+            _id: "a2",
+            accountName: "Older",
+            accountAmount: undefined,
+            _creationTime: 1000,
+          }),
         ],
         status: "Exhausted",
         loadMore: loadMoreMock,
@@ -378,7 +397,7 @@ describe("BankAccountsList", () => {
     it("returns 0 for equal sort field values and preserves relative order (line 69)", () => {
       paginatedQueryState = {
         results: [
-          makeAccount({ _id: "a1", accountName: "First",  accountAmount: 999 }),
+          makeAccount({ _id: "a1", accountName: "First", accountAmount: 999 }),
           makeAccount({ _id: "a2", accountName: "Second", accountAmount: 999 }),
         ],
         status: "Exhausted",
