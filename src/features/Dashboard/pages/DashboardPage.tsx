@@ -2,6 +2,7 @@ import {
   Box,
   Heading,
   HStack,
+  parseDate,
   Text,
   VStack,
   type DatePickerValueChangeDetails,
@@ -32,6 +33,28 @@ export default function DashboardPage() {
 
   const [, setLocation] = useLocation();
 
+  // Handle previous month navigation
+  const handlePreviousMonth = React.useCallback(() => {
+    const previousMonth = new Date(date);
+    previousMonth.setMonth(date.getMonth() - 1);
+    setLocation(
+      `/dashboard/month/${previousMonth.getMonth() + 1}/year/${previousMonth.getFullYear()}${
+        params.category ? `/category/${params.category}` : ""
+      }`,
+    );
+  }, [date, params.category, setLocation]);
+
+  // Handle next month navigation
+  const handleNextMonth = React.useCallback(() => {
+    const nextMonth = new Date(date);
+    nextMonth.setMonth(date.getMonth() + 1);
+    setLocation(
+      `/dashboard/month/${nextMonth.getMonth() + 1}/year/${nextMonth.getFullYear()}${
+        params.category ? `/category/${params.category}` : ""
+      }`,
+    );
+  }, [date, params.category, setLocation]);
+
   const handleDateChange = (details: DatePickerValueChangeDetails) => {
     const month = details.value?.[0]?.month ?? date.getMonth() + 1;
     const year = details.value?.[0]?.year ?? date.getFullYear();
@@ -48,7 +71,13 @@ export default function DashboardPage() {
           <Heading>Dashboard</Heading>
           <Text>Welcome to the Dashboard!</Text>
         </VStack>
-        <CustomMonthPicker onValueChange={handleDateChange} />
+        <CustomMonthPicker
+          size="xl"
+          value={[parseDate(date)]}
+          onPreviousMonth={handlePreviousMonth}
+          onNextMonth={handleNextMonth}
+          onValueChange={handleDateChange}
+        />
       </HStack>
 
       <VStack spaceY={14} align="stretch">
