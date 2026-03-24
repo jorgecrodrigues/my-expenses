@@ -2,14 +2,29 @@
 
 import {
   DatePicker,
+  IconButton,
+  InputGroup,
   Portal,
   type DatePickerRootProps,
   type DateValue,
 } from "@chakra-ui/react";
 import { CalendarDate } from "@internationalized/date";
-import { IconCalendarMonth } from "@tabler/icons-react";
+import {
+  IconCalendarMinus,
+  IconCalendarMonth,
+  IconCalendarPlus,
+} from "@tabler/icons-react";
 
-export default function CustomMonthPicker(props: DatePickerRootProps) {
+interface CustomMonthPickerProps extends DatePickerRootProps {
+  onPreviousMonth?: () => void;
+  onNextMonth?: () => void;
+}
+
+export default function CustomMonthPicker({
+  onPreviousMonth,
+  onNextMonth,
+  ...props
+}: CustomMonthPickerProps) {
   return (
     <DatePicker.Root
       format={format}
@@ -17,18 +32,34 @@ export default function CustomMonthPicker(props: DatePickerRootProps) {
       defaultView="month"
       minView="month"
       placeholder="mm/yyyy"
-      maxWidth={120}
+      maxWidth={300}
       {...props}
     >
       <DatePicker.Label />
-      <DatePicker.Control>
+      <InputGroup
+        as={DatePicker.Control}
+        startAddon={
+          <>
+            <IconButton variant="ghost" size="sm" onClick={onPreviousMonth}>
+              <IconCalendarMinus />
+            </IconButton>
+            <IconButton variant="ghost" size="sm" onClick={onNextMonth}>
+              <IconCalendarPlus />
+            </IconButton>
+          </>
+        }
+        endElement={
+          <DatePicker.IndicatorGroup>
+            <DatePicker.Trigger>
+              <IconButton variant="ghost" size="sm">
+                <IconCalendarMonth />
+              </IconButton>
+            </DatePicker.Trigger>
+          </DatePicker.IndicatorGroup>
+        }
+      >
         <DatePicker.Input />
-        <DatePicker.IndicatorGroup>
-          <DatePicker.Trigger>
-            <IconCalendarMonth />
-          </DatePicker.Trigger>
-        </DatePicker.IndicatorGroup>
-      </DatePicker.Control>
+      </InputGroup>
       <Portal>
         <DatePicker.Positioner>
           <DatePicker.Content>
