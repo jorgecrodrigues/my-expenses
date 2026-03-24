@@ -7,13 +7,15 @@ import {
   Box,
   Button,
   HStack,
-  IconButton,
   Input,
+  parseDate,
   Skeleton,
   SkeletonCircle,
   Table,
   Text,
+  type DatePickerValueChangeDetails,
 } from "@chakra-ui/react";
+import CustomMonthPicker from "@/shared/components/CustomMonthPicker";
 import { listRowStaggerEnter } from "@/shared/animation/chakraMotion";
 import useIntersectionObserver from "@/shared/hooks/useIntersectionObserver";
 import { api } from "../../../../convex/_generated/api";
@@ -22,11 +24,7 @@ import RemoveExpenseDialog from "../modals/RemoveExpense";
 import type { Doc, Id } from "../../../../convex/_generated/dataModel";
 import DuplicateExpenseDialog from "../modals/DuplicateExpense";
 import ManageExpenseFiles from "../modals/ManageExpenseFiles";
-import {
-  IconArrowDown,
-  IconCalendarMinus,
-  IconCalendarPlus,
-} from "@tabler/icons-react";
+import { IconArrowDown } from "@tabler/icons-react";
 
 export default function ExpensesList() {
   const [search, setSearch] = React.useState<string>("");
@@ -75,6 +73,14 @@ export default function ExpensesList() {
     nextMonth.setDate(1);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
     setDate(nextMonth.toISOString().split("T")[0]);
+  };
+
+  const handleDateChange = (details: DatePickerValueChangeDetails) => {
+    const month = details.value?.[0]?.month;
+    const year = details.value?.[0]?.year;
+    if (month && year) {
+      setDate(`${year}-${String(month).padStart(2, "0")}-01`);
+    }
   };
 
   // Calculate totals based on filtered results
@@ -155,27 +161,11 @@ export default function ExpensesList() {
             }
           />
           <Box mx={4} width="1px" h={5} bg="gray.500" />
-          <IconButton
-            aria-label="Previous Month"
-            title="Previous Month"
-            variant="outline"
-            onClick={handlePreviousMonth}
-          >
-            <IconCalendarMinus />
-          </IconButton>
-          <IconButton
-            aria-label="Next Month"
-            title="Next Month"
-            variant="outline"
-            onClick={handleNextMonth}
-          >
-            <IconCalendarPlus />
-          </IconButton>
-          <Input
-            type="date"
-            variant="outline"
-            value={date || ""}
-            onChange={(e) => setDate(e.target.value)}
+          <CustomMonthPicker
+            value={date ? [parseDate(date)] : undefined}
+            onPreviousMonth={handlePreviousMonth}
+            onNextMonth={handleNextMonth}
+            onValueChange={handleDateChange}
           />
         </HStack>
         <Box mx={4} w="1px" h={5} bg="gray.500" />
