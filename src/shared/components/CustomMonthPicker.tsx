@@ -50,8 +50,14 @@ export default function CustomMonthPicker({
         }
         endElement={
           <DatePicker.IndicatorGroup>
-            <DatePicker.Trigger>
-              <IconButton variant="ghost" size="sm">
+            <DatePicker.Trigger asChild>
+              <IconButton
+                aria-label="open calendar"
+                role="button"
+                name="open calendar"
+                variant="ghost"
+                size="sm"
+              >
                 <IconCalendarMonth />
               </IconButton>
             </DatePicker.Trigger>
