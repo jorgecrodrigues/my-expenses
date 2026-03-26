@@ -1,10 +1,25 @@
 // @vitest-environment jsdom
-import React from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
-import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
+import {
+  ChakraProvider,
+  defaultSystem,
+  type DatePickerValueChangeDetails,
+} from "@chakra-ui/react";
 import { CalendarDate } from "@internationalized/date";
+
+import {
+  formatMonthPickerValue,
+  parseMonthPickerValue,
+} from "../utils/monthPickerValue";
 
 vi.mock("@tabler/icons-react", () => ({
   IconCalendarMinus: () => <span>previous month</span>,
@@ -14,7 +29,15 @@ vi.mock("@tabler/icons-react", () => ({
 
 import CustomMonthPicker from "./CustomMonthPicker";
 
-function renderWithChakra(ui: React.ReactElement) {
+beforeAll(() => {
+  globalThis.ResizeObserver = class {
+    observe() { }
+    unobserve() { }
+    disconnect() { }
+  };
+});
+
+function renderWithChakra(ui: ReactElement) {
   return render(<ChakraProvider value={defaultSystem}>{ui}</ChakraProvider>);
 }
 
@@ -97,6 +120,58 @@ describe("CustomMonthPicker", () => {
       expect(() =>
         fireEvent.click(screen.getByRole("button", { name: "next month" })),
       ).not.toThrow();
+    });
+  });
+
+  describe("formatMonthPickerValue", () => {
+    it("formats month with zero padding", () => {
+      expect(formatMonthPickerValue(new CalendarDate(2026, 3, 1))).toBe(
+        "03/2026",
+      );
+    });
+
+    it("pads single-digit months", () => {
+      expect(formatMonthPickerValue(new CalendarDate(2026, 1, 1))).toBe(
+        "01/2026",
+      );
+    });
+  });
+
+  describe("parseMonthPickerValue", () => {
+    it("parses mm/yyyy with zero-padded month", () => {
+      expect(parseMonthPickerValue("03/2026")).toEqual(
+        new CalendarDate(2026, 3, 1),
+      );
+    });
+
+    it("parses m/yyyy with a single-digit month", () => {
+      expect(parseMonthPickerValue("3/2026")).toEqual(
+        new CalendarDate(2026, 3, 1),
+      );
+    });
+
+    it("returns undefined when the value does not match mm/yyyy", () => {
+      expect(parseMonthPickerValue("")).toBeUndefined();
+      expect(parseMonthPickerValue("2026-03")).toBeUndefined();
+      expect(parseMonthPickerValue("003/2026")).toBeUndefined();
+      expect(parseMonthPickerValue("13/26")).toBeUndefined();
+    });
+  });
+
+  describe("DatePicker integration", () => {
+    it("calls onValueChange after typing a valid mm/yyyy and blurring", async () => {
+      const onValueChange = vi.fn();
+      renderWithChakra(<CustomMonthPicker onValueChange={onValueChange} />);
+      const input = screen.getByRole("textbox");
+      fireEvent.change(input, { target: { value: "08/2025" } });
+      fireEvent.blur(input);
+
+      await waitFor(() => {
+        expect(onValueChange).toHaveBeenCalled();
+      });
+
+      const first = onValueChange.mock.calls[0][0] as DatePickerValueChangeDetails;
+      expect(first.value?.[0]).toEqual(new CalendarDate(2025, 8, 1));
     });
   });
 });
