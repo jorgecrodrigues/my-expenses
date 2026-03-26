@@ -6,9 +6,8 @@ import {
   InputGroup,
   Portal,
   type DatePickerRootProps,
-  type DateValue,
 } from "@chakra-ui/react";
-import { CalendarDate } from "@internationalized/date";
+import { formatMonthPickerValue, parseMonthPickerValue } from "../utils/monthPickerValue";
 import {
   IconCalendarMinus,
   IconCalendarMonth,
@@ -27,8 +26,8 @@ export default function CustomMonthPicker({
 }: CustomMonthPickerProps) {
   return (
     <DatePicker.Root
-      format={format}
-      parse={parse}
+      format={formatMonthPickerValue}
+      parse={parseMonthPickerValue}
       defaultView="month"
       minView="month"
       placeholder="mm/yyyy"
@@ -83,18 +82,3 @@ export default function CustomMonthPicker({
     </DatePicker.Root>
   );
 }
-
-const format = (date: DateValue): string => {
-  const month = date.month.toString().padStart(2, "0");
-  const year = date.year.toString();
-  return `${month}/${year}`;
-};
-
-const parse = (value: string) => {
-  const fullRegex = /^(\d{1,2})\/(\d{4})$/;
-  const fullMatch = value.match(fullRegex);
-  if (fullMatch) {
-    const [, month, year] = fullMatch.map(Number);
-    return new CalendarDate(year, month, 1);
-  }
-};
