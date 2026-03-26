@@ -53,9 +53,10 @@ export default function ManageExpenseFiles({
   const generateUploadUrl = useMutation(api.expensesfiles.generateUploadUrl);
   const sendFile = useMutation(api.expensesfiles.sendFile);
 
-  const files = useQuery(api.expensesfiles.getExpenseFiles, {
-    expenseId: expense._id,
-  });
+  const files = useQuery(
+    api.expensesfiles.getExpenseFiles,
+    open ? { expenseId: expense._id } : "skip",
+  );
 
   const fileUpload = useFileUpload({
     maxFiles: 10,
@@ -64,7 +65,7 @@ export default function ManageExpenseFiles({
   });
 
   const handleSendFiles = React.useCallback(
-    async (e: React.FormEvent<HTMLButtonElement>) => {
+    async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       try {
         setLoading(true);
