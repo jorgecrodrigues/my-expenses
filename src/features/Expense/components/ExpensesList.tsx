@@ -16,7 +16,6 @@ import {
   type DatePickerValueChangeDetails,
 } from "@chakra-ui/react";
 import CustomMonthPicker from "@/shared/components/CustomMonthPicker";
-import { listRowStaggerEnter } from "@/shared/animation/chakraMotion";
 import useIntersectionObserver from "@/shared/hooks/useIntersectionObserver";
 import { api } from "../../../../convex/_generated/api";
 import CreateOrEditExpenseDialog from "../modals/CreateOrEditExpense";
@@ -270,8 +269,8 @@ export default function ExpensesList() {
                 expense.category?.toLowerCase()?.includes(search),
             )
             ?.sort(handleSortBy)
-            ?.map?.((expense, i: number) => (
-              <Table.Row key={expense._id} {...listRowStaggerEnter(i)}>
+            ?.map?.((expense) => (
+              <Table.Row key={expense._id}>
                 <Table.Cell fontSize="xs">{expense?.name ?? "-"}</Table.Cell>
                 <Table.Cell fontSize="xs" color="fg.subtle">
                   {expense?.description ?? "-"}
@@ -279,9 +278,9 @@ export default function ExpensesList() {
                 <Table.Cell fontSize="xs" color="fg.subtle">
                   {expense?.amount
                     ? expense.amount.toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                      })
+                      style: "currency",
+                      currency: "BRL",
+                    })
                     : "-"}
                 </Table.Cell>
                 <Table.Cell
@@ -314,17 +313,17 @@ export default function ExpensesList() {
                 >
                   {expense?.paidAt
                     ? new Date(expense.paidAt).toLocaleString("pt-BR", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })
                     : "-"}
                 </Table.Cell>
                 <Table.Cell fontSize="xs" color="fg.subtle">
                   {expense?._creationTime
                     ? new Date(expense._creationTime).toLocaleString("pt-BR", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })
                     : "-"}
                 </Table.Cell>
                 <Table.Cell>
