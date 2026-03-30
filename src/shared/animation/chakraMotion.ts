@@ -310,10 +310,10 @@ export function pageStaggerSlideLeftCompact(delayMs: number) {
 export function listRowStaggerEnter(staggerIndex: number) {
   return keyframeStagger(
     "slide-up-fade-in",
-    200,
+    50,
     "ease-in-out",
     staggerIndex,
-    { staggerMs: 50 },
+    { staggerMs: 20 },
   );
 }
 

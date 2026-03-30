@@ -13,7 +13,6 @@ import {
   Table,
   Text,
 } from "@chakra-ui/react";
-import { listRowStaggerEnter } from "@/shared/animation/chakraMotion";
 import useIntersectionObserver from "@/shared/hooks/useIntersectionObserver";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc } from "../../../../convex/_generated/dataModel";
@@ -179,8 +178,8 @@ export default function BankAccountsList() {
           </Table.Row>
         </Table.Header>
         <Table.Body>
-          {filtered?.map((account, i: number) => (
-            <Table.Row key={account._id} {...listRowStaggerEnter(i)}>
+          {filtered?.map((account) => (
+            <Table.Row key={account._id}>
               <Table.Cell fontSize="xs">
                 {account.accountName ?? "-"}
               </Table.Cell>
@@ -212,9 +211,9 @@ export default function BankAccountsList() {
               <Table.Cell fontSize="xs" color="fg.subtle">
                 {account.accountAmount != null
                   ? account.accountAmount.toLocaleString("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    })
+                    style: "currency",
+                    currency: "BRL",
+                  })
                   : "-"}
               </Table.Cell>
               <Table.Cell fontSize="xs" color="fg.subtle" whiteSpace="nowrap">
