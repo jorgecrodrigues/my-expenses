@@ -42,7 +42,8 @@ test.describe("sign-in", () => {
           url.hostname === "github.com" &&
           (url.pathname.startsWith("/login/oauth") ||
             (url.pathname === "/login" &&
-              url.searchParams.get("return_to")?.includes("/login/oauth"))),
+              (url.searchParams.get("return_to")?.includes("/login/oauth") ??
+                false))),
         { timeout: 30_000 },
       ),
       githubButton.click(),
