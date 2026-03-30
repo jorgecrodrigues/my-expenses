@@ -12,6 +12,8 @@ export default defineConfig({
   },
   plugins: [react()],
   test: {
+    // Playwright specs live under e2e/; Vitest must not load them (same *.spec.ts pattern).
+    exclude: ["**/node_modules/**", "**/dist/**", "**/e2e/**"],
     coverage: {
       provider: "v8",
       reportsDirectory: "coverage",
