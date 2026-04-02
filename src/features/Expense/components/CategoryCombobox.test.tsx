@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   cleanup,
   render,
@@ -24,6 +24,7 @@ beforeAll(() => {
 
 afterEach(() => {
   cleanup();
+  vi.clearAllMocks();
 });
 
 function renderWithChakra(ui: React.ReactElement) {
@@ -126,6 +127,31 @@ describe("CategoryCombobox", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("filters without a creatable row when the query matches an existing label exactly", async () => {
+    const user = userEvent.setup();
+    renderWithChakra(
+      <CategoryCombobox
+        initialItems={[
+          { value: "food", label: "Food" },
+          { value: "travel", label: "Travel" },
+        ]}
+        inputProps={{ placeholder: "Enter category" }}
+      />,
+    );
+
+    const input = screen.getByRole("combobox");
+    await user.click(input);
+    await user.clear(input);
+    await user.keyboard("food");
+
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: "Food" })).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole("option", { name: "Travel" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows no categories message when there are no initial items and the list is open", async () => {
     const user = userEvent.setup();
     renderWithChakra(
@@ -171,6 +197,126 @@ describe("CategoryCombobox", () => {
     const input = screen.getByPlaceholderText("Enter category");
     expect(input).toHaveAttribute("name", "category");
     expect(input).toBeRequired();
+  });
+
+  it("calls onCreateItem when the user selects a newly typed category", async () => {
+    const onCreateItem = vi.fn();
+    const user = userEvent.setup();
+    renderWithChakra(
+      <CategoryCombobox
+        initialItems={[{ value: "food", label: "Food" }]}
+        onCreateItem={onCreateItem}
+        inputProps={{ placeholder: "Enter category" }}
+      />,
+    );
+
+    await user.click(screen.getByRole("combobox"));
+    await user.keyboard("Bakery");
+
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: "Bakery" })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("option", { name: "Bakery" }));
+
+    await waitFor(() => {
+      expect(onCreateItem).toHaveBeenCalledWith(
+        expect.objectContaining({
+          label: "Bakery",
+          value: "Bakery",
+          isNew: true,
+        }),
+      );
+    });
+  });
+
+  it("shows all options again after clearing a filter query", async () => {
+    const user = userEvent.setup();
+    renderWithChakra(
+      <CategoryCombobox
+        initialItems={[
+          { value: "food", label: "Food" },
+          { value: "travel", label: "Travel" },
+        ]}
+        inputProps={{ placeholder: "Enter category" }}
+      />,
+    );
+
+    const input = screen.getByRole("combobox");
+    await user.click(input);
+    await user.clear(input);
+    await user.keyboard("tra");
+
+    await waitFor(() => {
+      expect(screen.queryByRole("option", { name: "Food" })).not.toBeInTheDocument();
+    });
+
+    await user.clear(input);
+
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: "Food" })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: "Travel" })).toBeInTheDocument();
+    });
+  });
+
+  it("restores the full item list when opening via the trigger after filtering", async () => {
+    const user = userEvent.setup();
+    renderWithChakra(
+      <CategoryCombobox
+        initialItems={[
+          { value: "food", label: "Food" },
+          { value: "travel", label: "Travel" },
+        ]}
+        inputProps={{ placeholder: "Enter category" }}
+      />,
+    );
+
+    const input = screen.getByRole("combobox");
+    const control = input.closest('[data-part="control"]') as HTMLElement;
+    const trigger = within(control).getByRole("button", {
+      name: "Toggle suggestions",
+    });
+
+    await user.click(input);
+    await user.clear(input);
+    await user.keyboard("tra");
+
+    await waitFor(() => {
+      expect(screen.queryByRole("option", { name: "Food" })).not.toBeInTheDocument();
+    });
+
+    await user.click(trigger);
+
+    // Trigger may close the list; options stay mounted but can be aria-hidden.
+    expect(
+      await screen.findByRole("option", { name: "Food", hidden: true }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("option", { name: "Travel", hidden: true }),
+    ).toBeInTheDocument();
+  });
+
+  it("updates highlight when the list closes with a value selected", async () => {
+    const user = userEvent.setup();
+    renderWithChakra(
+      <CategoryCombobox
+        initialItems={[
+          { value: "food", label: "Food" },
+          { value: "travel", label: "Travel" },
+        ]}
+        selectedItem="food"
+        inputProps={{ placeholder: "Enter category" }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("combobox")).toHaveValue("Food");
+    });
+
+    await openCombobox(user);
+    await user.keyboard("{Escape}");
+
+    expect(screen.getByRole("combobox")).toHaveValue("Food");
   });
 
   it("renders clear and trigger controls next to the input", () => {
