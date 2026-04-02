@@ -9,21 +9,31 @@ import {
 import React from "react";
 import { flushSync } from "react-dom";
 
+export interface CategoryComboboxItem {
+  value: string;
+  label: string;
+  isNew?: boolean;
+}
+
 interface CategoryComboboxProps {
   initialItems?: { value: string; label: string }[];
   selectedItem?: string;
   inputProps?: Combobox.InputProps;
+  /** Called when the user commits a newly typed category (not from initial items). */
+  onCreateItem?: (item: CategoryComboboxItem) => void;
 }
 
 export default function CategoryCombobox({
   initialItems = [],
   selectedItem,
   inputProps,
+  onCreateItem,
 }: CategoryComboboxProps) {
   const { combobox } = useCreatableCombobox({
     initialItems,
     selectedItem,
     createOptionMode: "prepend",
+    onCreateItem,
   });
 
   return (
@@ -107,6 +117,7 @@ function useCreatableCombobox(props: UseCreatableComboboxProps) {
     !isNewItemValue(item.value) && contains(item.label, query);
 
   const [selectedValue, setSelectedValue] = React.useState<string[]>([]);
+  const selectedValueRef = React.useRef<string[]>([]);
 
   const collection = React.useMemo(
     () =>
@@ -170,8 +181,9 @@ function useCreatableCombobox(props: UseCreatableComboboxProps) {
         setItems(itemsRef.current);
       }
 
-      if (!open && selectedValue.length > 0) {
-        const inputValue = collection.stringify(selectedValue[0]) || "";
+      if (!open && selectedValueRef.current.length > 0) {
+        const inputValue =
+          collection.stringify(selectedValueRef.current[0]) || "";
         combobox.setHighlightValue(inputValue);
       }
     },
@@ -179,7 +191,9 @@ function useCreatableCombobox(props: UseCreatableComboboxProps) {
     onValueChange: (details) => {
       const { value } = details;
       const inputValue = combobox.inputValue;
-      setSelectedValue(replaceNewItemValue(value, inputValue));
+      const next = replaceNewItemValue(value, inputValue);
+      selectedValueRef.current = next;
+      setSelectedValue(next);
       if (value.includes(NEW_ITEM_VALUE_PREFIX)) {
         selectNewItem(inputValue);
       }
@@ -193,7 +207,9 @@ function useCreatableCombobox(props: UseCreatableComboboxProps) {
 
   React.useEffect(() => {
     if (selectedItem) {
-      setSelectedValue([selectedItem]);
+      const next = [selectedItem];
+      selectedValueRef.current = next;
+      setSelectedValue(next);
     }
   }, [selectedItem]);
 

@@ -4,18 +4,32 @@ globs: src/**/*.{ts,tsx}
 alwaysApply: false
 ---
 
-# Frontend standards
+# Frontend Standards
 
-- Use functional React components.
-- Prefer feature-level code in `src/features/<FeatureName>/...` and shared/reusable code in `src/shared/...`.
-- UI primitives/components shared across the app belong in `src/components/ui/...`.
-- Use `wouter` routes inside `src/App.tsx` (via `Route`/`Switch`).
-- Prefer Chakra UI components for layout/forms to match existing patterns.
-- **Animation** ([Chakra UI — Animation](https://chakra-ui.com/docs/components/concepts/animation)):
-  - Prefer **CSS animations** (keyframes + Chakra style props) for Chakra components — avoid heavy JS-driven animation libraries unless a use case truly needs them.
-  - Disclosure components (dialog, popover, etc.) expose `data-state`: use **`_open`** when open and **`_closed`** when closed to style enter/exit.
-  - Define **`@keyframes`** (e.g. fade-in / fade-out) and reference them via `animation` or `animationName` / `animationDuration` on those pseudo props.
-  - **Compose** multiple animations with `animationName: "fade-in, scale-in"` (comma-separated) and set shared timing with `animationDuration` (and related longhands as needed).
-- Keep imports clean:
-  - Use `@/` aliases (from `src/*`).
-  - Avoid long chains of relative imports.
+Apply when working in `src/**/*.{ts,tsx}`.
+
+## Components
+- Use functional React components only.
+- Feature-scoped code lives in `src/features/<FeatureName>/` (pages, components, modals, hooks).
+- Reusable cross-feature code lives in `src/shared/`.
+- Low-level UI primitives live in `src/components/ui/`.
+- Routing is handled by `wouter` in `src/App.tsx` via `Route`/`Switch`.
+
+## Styling & UI
+- Use Chakra UI components for layout and forms to match existing patterns.
+- Prefer CSS animations (keyframes + Chakra style props) over JS-driven animation libraries.
+- For disclosure components (dialog, popover, etc.) use `_open` / `_closed` pseudo props to style enter/exit states via `data-state`.
+- Define `@keyframes` (e.g. `fade-in`, `scale-in`) and reference via `animationName` / `animationDuration`.
+- Compose multiple animations: `animationName: "fade-in, scale-in"` (comma-separated).
+
+## Imports
+- Always use `@/` path alias (maps to `src/`); avoid deep relative imports.
+- Use `~/` for convex imports (maps to `convex/`).
+
+## Data fetching
+- Use `useQuery()` / `usePaginatedQuery()` from `convex/react` — no manual fetch calls.
+- Use `useMutation()` for writes.
+- Infinite scroll uses `usePaginatedQuery` + `useIntersectionObserver` hook from `src/shared/hooks/`.
+
+## CRUD patterns
+- Implement create/edit/delete operations as modal dialogs inside `features/<Feature>/modals/`.

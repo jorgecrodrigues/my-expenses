@@ -3,16 +3,28 @@ description: How to run/verify work in this repo
 alwaysApply: true
 ---
 
-# Dev workflow
+# Dev Workflow
 
-- Frontend:
-  - `npm run dev` for Vite development
-  - `npm run lint` for ESLint checks
-  - `npm run test` for Vitest test runs
-- Convex:
-  - Use `npm run convex:dev` (or `npx convex dev`) for local dev
-  - Do not use `npx convex deploy` while iterating locally
+## Running locally
+Both servers must run simultaneously in separate terminals:
+```bash
+npm run dev          # Vite frontend (port 5173)
+npm run convex:dev   # Convex backend (watches convex/ for changes)
+```
 
-# Verification expectation
+## Checks to run after changes
+- `npm run lint` — ESLint (always)
+- `npm run test` — Vitest (after logic changes)
+- Verify Convex dev console after touching backend files
 
-- After meaningful changes, run the closest relevant checks (lint/tests, and Convex dev verification when touching backend code).
+## Single test
+```bash
+npx vitest run src/path/to/file.test.tsx
+```
+
+## Coverage
+```bash
+npm run test:coverage   # generates coverage/ dir
+npm run coverage:badge  # updates badge in README
+```
+
