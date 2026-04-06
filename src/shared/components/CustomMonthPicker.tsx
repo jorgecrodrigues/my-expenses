@@ -32,6 +32,7 @@ export default function CustomMonthPicker({
       minView="month"
       placeholder="mm/yyyy"
       maxWidth={300}
+      openOnClick
       {...props}
     >
       <DatePicker.Label />
