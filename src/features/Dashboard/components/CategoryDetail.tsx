@@ -365,7 +365,19 @@ export default function CategoryDetail() {
               <Tooltip
                 cursor={{ fill: chart.color("background.muted") }}
                 animationDuration={0}
-                content={<Chart.Tooltip />}
+                content={
+                  <Chart.Tooltip
+                    showTotal
+                    formatter={(value) =>
+                      typeof value === "number"
+                        ? value.toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        })
+                        : String(value ?? "")
+                    }
+                  />
+                }
               />
 
               {chart.series.map((item) => (
