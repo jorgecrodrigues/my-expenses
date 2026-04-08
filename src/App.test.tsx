@@ -71,7 +71,11 @@ vi.mock("@/features/Expense/pages/ExpensePage", () => ({
   default: () => <div>ExpensePage</div>,
 }));
 
-vi.mock("./features/About/pages/AboutPage", () => ({
+vi.mock("@/features/BankAccount/pages/BankAccountPage", () => ({
+  default: () => <div>BankAccountPage</div>,
+}));
+
+vi.mock("@/features/About/pages/AboutPage", () => ({
   default: () => <div>AboutPage</div>,
 }));
 
@@ -92,26 +96,26 @@ describe("App", () => {
     expect(screen.getByText("Logo loading")).toBeInTheDocument();
   });
 
-  it("renders authenticated layout and home route", () => {
+  it("renders authenticated layout and home route", async () => {
     authState = "authenticated";
     render(<App />);
 
     expect(screen.getByText("Header")).toBeInTheDocument();
     expect(screen.getByText("Sidebar")).toBeInTheDocument();
-    expect(screen.getByText("HomePage")).toBeInTheDocument();
+    expect(await screen.findByText("HomePage")).toBeInTheDocument();
   });
 
-  it("renders 404 for unknown route when authenticated", () => {
+  it("renders 404 for unknown route when authenticated", async () => {
     authState = "authenticated";
     window.history.pushState({}, "", "/nope");
     render(<App />);
 
-    expect(screen.getByText("404 - Page Not Found")).toBeInTheDocument();
+    expect(await screen.findByText("404 - Page Not Found")).toBeInTheDocument();
   });
 
-  it("renders sign-in when unauthenticated", () => {
+  it("renders sign-in when unauthenticated", async () => {
     authState = "unauthenticated";
     render(<App />);
-    expect(screen.getByText("SignIn")).toBeInTheDocument();
+    expect(await screen.findByText("SignIn")).toBeInTheDocument();
   });
 });
