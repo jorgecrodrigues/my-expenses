@@ -12,13 +12,14 @@ describe("useIntersectionObserver", () => {
     const observeMock = vi.fn();
     const disconnectMock = vi.fn();
 
-    const IO = vi.fn().mockImplementation((cb: IOCallback) => {
-      lastCallback = cb;
-      return {
-        observe: observeMock,
-        disconnect: disconnectMock,
-      };
-    });
+    class MockIntersectionObserver {
+      observe = observeMock;
+      disconnect = disconnectMock;
+      constructor(cb: IOCallback) {
+        lastCallback = cb;
+      }
+    }
+    const IO = vi.fn(MockIntersectionObserver);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (globalThis as any).IntersectionObserver = IO;
@@ -45,10 +46,14 @@ describe("useIntersectionObserver", () => {
     const observeMock = vi.fn();
     const disconnectMock = vi.fn();
 
-    const IO = vi.fn().mockImplementation(() => ({
-      observe: observeMock,
-      disconnect: disconnectMock,
-    }));
+    class MockIntersectionObserver {
+      observe = observeMock;
+      disconnect = disconnectMock;
+      constructor(cb: IOCallback) {
+        void cb;
+      }
+    }
+    const IO = vi.fn(MockIntersectionObserver);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (globalThis as any).IntersectionObserver = IO;
@@ -72,13 +77,17 @@ describe("useIntersectionObserver", () => {
 
   it("sets entry to null when ref is set to null", () => {
     let lastCallback: IOCallback | null = null;
-    const IO = vi.fn().mockImplementation((cb: IOCallback) => {
-      lastCallback = cb;
-      return {
-        observe: vi.fn(),
-        disconnect: vi.fn(),
-      };
-    });
+    const observeMock = vi.fn();
+    const disconnectMock = vi.fn();
+
+    class MockIntersectionObserver {
+      observe = observeMock;
+      disconnect = disconnectMock;
+      constructor(cb: IOCallback) {
+        lastCallback = cb;
+      }
+    }
+    const IO = vi.fn(MockIntersectionObserver);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (globalThis as any).IntersectionObserver = IO;
 
