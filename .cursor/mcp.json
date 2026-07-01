@@ -1,5 +1,9 @@
 {
     "mcpServers": {
+        "convex": {
+            "command": "npx",
+            "args": ["-y", "convex@latest", "mcp", "start"]
+        },
         "chakra-ui": {
             "command": "npx",
             "args": [

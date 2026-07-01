@@ -1,0 +1,48 @@
+name: my-expenses
+
+x-app-common: &app-common
+  platform: linux/arm64
+  build:
+    context: .
+    target: development
+  volumes:
+    - .:/app
+    # Keep Linux arm64 node_modules inside the container (not the host copy).
+    - node_modules:/app/node_modules
+  env_file:
+    - path: .env.local
+      required: true
+
+services:
+  frontend:
+    <<: *app-common
+    ports:
+      - "5173:5173"
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    command: npm run dev -- --host 0.0.0.0 --port 5173
+
+  # convex:
+  #   <<: *app-common
+  #   # Convex auth comes from .env.local (env_file above). Do not set CONVEX_* here
+  #   # with ${VAR:-} — compose interpolates from the host .env only and an empty
+  #   # value overrides env_file, which causes the interactive login prompt in Docker.
+  #   command: npx convex dev
+  #   stdin_open: true
+  #   tty: true
+
+  # web:
+  #   platform: linux/arm64
+  #   build:
+  #     context: .
+  #     target: production
+  #     args:
+  #       VITE_CONVEX_URL: ${VITE_CONVEX_URL:?Set VITE_CONVEX_URL for production builds}
+  #   ports:
+  #     - "8080:80"
+  #   profiles:
+  #     - prod
+
+volumes:
+  node_modules:
