@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import {
   Box,
+  Checkbox,
   HStack,
   Progress,
   SimpleGrid,
@@ -203,6 +204,10 @@ function SubcategoryGridSkeleton() {
 }
 
 export default function CategoryDetail() {
+  const [selectedExpenseNames, setSelectedExpenseNames] = React.useState<
+    Set<string>
+  >(new Set());
+
   const params = useParams<{
     month?: string;
     year?: string;
@@ -267,6 +272,60 @@ export default function CategoryDetail() {
       }));
   }, [totalByCategoryByName]);
 
+  const expenseNames = React.useMemo(() => {
+    if (!data) return [];
+    return [...new Set(data.map((item) => item.name))].sort((a, b) =>
+      a.localeCompare(b),
+    );
+  }, [data]);
+
+  React.useEffect(() => {
+    setSelectedExpenseNames(new Set(expenseNames));
+  }, [params.category, params.year]);
+
+  React.useEffect(() => {
+    setSelectedExpenseNames((prev) => {
+      let changed = false;
+      const next = new Set(prev);
+
+      for (const name of expenseNames) {
+        if (!next.has(name)) {
+          next.add(name);
+          changed = true;
+        }
+      }
+
+      for (const name of next) {
+        if (!expenseNames.includes(name)) {
+          next.delete(name);
+          changed = true;
+        }
+      }
+
+      return changed ? next : prev;
+    });
+  }, [expenseNames]);
+
+  const toggleExpenseName = React.useCallback(
+    (name: string, checked: boolean) => {
+      setSelectedExpenseNames((prev) => {
+        const next = new Set(prev);
+        if (checked) {
+          next.add(name);
+        } else {
+          next.delete(name);
+        }
+        return next;
+      });
+    },
+    [],
+  );
+
+  const visibleExpenseNames = React.useMemo(
+    () => expenseNames.filter((name) => selectedExpenseNames.has(name)),
+    [expenseNames, selectedExpenseNames],
+  );
+
   // Normalize data for chart representation
   const normalizedData: NormalizedData[] = React.useMemo(() => {
     if (!data) return [];
@@ -279,14 +338,12 @@ export default function CategoryDetail() {
 
     const monthData = months.map((month, index) => {
       const monthItems = data.filter(
-        (item) => new Date(item.date).getMonth() === index,
+        (item) =>
+          new Date(item.date).getMonth() === index &&
+          selectedExpenseNames.has(item.name),
       );
 
-      const distinctNames = Array.from(
-        new Set(monthItems.map((item) => item.name)),
-      );
-
-      const totalAmountByName = distinctNames.map((name) => {
+      const totalAmountByName = visibleExpenseNames.map((name) => {
         const total = monthItems
           .filter((item) => item.name === name)
           .reduce((sum, item) => sum + item.amount, 0);
@@ -300,20 +357,16 @@ export default function CategoryDetail() {
     });
 
     return monthData;
-  }, [data]);
+  }, [data, selectedExpenseNames, visibleExpenseNames]);
 
   // Prepare series for the chart representation
   const normalizedSeries: NormalizedSeries[] = React.useMemo(() => {
-    if (!data) return [];
-
-    const distinctNames = Array.from(new Set(data.map((item) => item.name)));
-
-    return distinctNames.map((name) => ({
+    return visibleExpenseNames.map((name) => ({
       name,
       color: generateColorByString(name),
       stackId: "a",
     }));
-  }, [data]);
+  }, [visibleExpenseNames]);
 
   const chart = useChart({
     data: normalizedData,
@@ -328,6 +381,34 @@ export default function CategoryDetail() {
       </Text>
 
       <VStack mb={8} justify="center" align="center" w="full">
+        {expenseNames.length > 0 && (
+          <HStack gap={4} w="full" justifyContent="flex-end" wrap="wrap">
+            {expenseNames.map((name) => (
+              <Checkbox.Root
+                key={name}
+                checked={selectedExpenseNames.has(name)}
+                cursor="pointer"
+                onCheckedChange={(details) =>
+                  toggleExpenseName(name, details.checked === true)
+                }
+              >
+                <Checkbox.HiddenInput />
+                <Checkbox.Control
+                  borderColor={generateColorByString(name)}
+                  bg={
+                    selectedExpenseNames.has(name)
+                      ? generateColorByString(name)
+                      : undefined
+                  }
+                />
+                <Checkbox.Label fontSize="sm" lineClamp={1} title={name}>
+                  {name}
+                </Checkbox.Label>
+              </Checkbox.Root>
+            ))}
+          </HStack>
+        )}
+
         {data === undefined ? (
           <CategoryBarChartSkeleton />
         ) : (
