@@ -279,32 +279,54 @@ export default function CategoryDetail() {
     );
   }, [data]);
 
+  const expenseNamesKey = expenseNames.join("\0");
+  const knownExpenseNamesKeyRef = React.useRef("");
+
   React.useEffect(() => {
-    setSelectedExpenseNames(new Set(expenseNames));
+    knownExpenseNamesKeyRef.current = "";
+    setSelectedExpenseNames(new Set());
   }, [params.category, params.year]);
 
   React.useEffect(() => {
+    if (expenseNames.length === 0) return;
+
     setSelectedExpenseNames((prev) => {
-      let changed = false;
+      const isInitialSelection = knownExpenseNamesKeyRef.current === "";
+
+      if (isInitialSelection) {
+        knownExpenseNamesKeyRef.current = expenseNamesKey;
+        return new Set(expenseNames);
+      }
+
+      if (knownExpenseNamesKeyRef.current === expenseNamesKey) {
+        return prev;
+      }
+
+      const previouslyKnown = new Set(
+        knownExpenseNamesKeyRef.current.split("\0"),
+      );
+      const currentNames = new Set(expenseNames);
       const next = new Set(prev);
+      let changed = false;
 
       for (const name of expenseNames) {
-        if (!next.has(name)) {
+        if (!previouslyKnown.has(name)) {
           next.add(name);
           changed = true;
         }
       }
 
       for (const name of next) {
-        if (!expenseNames.includes(name)) {
+        if (!currentNames.has(name)) {
           next.delete(name);
           changed = true;
         }
       }
 
+      knownExpenseNamesKeyRef.current = expenseNamesKey;
       return changed ? next : prev;
     });
-  }, [expenseNames]);
+  }, [expenseNames, expenseNamesKey]);
 
   const toggleExpenseName = React.useCallback(
     (name: string, checked: boolean) => {

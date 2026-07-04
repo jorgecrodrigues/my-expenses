@@ -141,6 +141,8 @@ function makeExpense(overrides: Partial<Doc<"expenses">> = {}): Doc<"expenses"> 
   };
 }
 
+const mockExpenses = [makeExpense()];
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
@@ -156,7 +158,7 @@ describe("CategoryDetail", () => {
     vi.mocked(useQuery).mockImplementation(
       ((query: unknown) => {
         if (query === "users.viewer") return { _id: "user1" };
-        if (query === "getExpenseByCategory") return [makeExpense()];
+        if (query === "getExpenseByCategory") return mockExpenses;
         return undefined;
       }) as typeof useQuery,
     );
@@ -193,7 +195,8 @@ describe("CategoryDetail", () => {
     expect(screen.getAllByText(/paid/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/left to pay/i).length).toBeGreaterThan(0);
     expect(screen.getByText("By expense name")).toBeInTheDocument();
-    expect(screen.getByText("Rent")).toBeInTheDocument();
+    expect(screen.getAllByText("Rent").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole("checkbox", { name: "Rent" })).toBeInTheDocument();
   });
 
   it("renders expense name checkboxes and toggles chart visibility", () => {
