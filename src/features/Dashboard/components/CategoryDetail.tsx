@@ -280,53 +280,47 @@ export default function CategoryDetail() {
   }, [data]);
 
   const expenseNamesKey = expenseNames.join("\0");
-  const knownExpenseNamesKeyRef = React.useRef("");
+  const selectionScopeKey = `${params.category ?? ""}|${params.year ?? ""}`;
+  const prevSelectionScopeKeyRef = React.useRef(selectionScopeKey);
 
   React.useEffect(() => {
-    knownExpenseNamesKeyRef.current = "";
-    setSelectedExpenseNames(new Set());
-  }, [params.category, params.year]);
+    const scopeChanged =
+      prevSelectionScopeKeyRef.current !== selectionScopeKey;
+    prevSelectionScopeKeyRef.current = selectionScopeKey;
 
-  React.useEffect(() => {
-    if (expenseNames.length === 0) return;
+    if (expenseNames.length === 0) {
+      if (scopeChanged) {
+        setSelectedExpenseNames(new Set());
+      }
+      return;
+    }
+
+    if (scopeChanged) {
+      setSelectedExpenseNames(new Set(expenseNames));
+      return;
+    }
 
     setSelectedExpenseNames((prev) => {
-      const isInitialSelection = knownExpenseNamesKeyRef.current === "";
-
-      if (isInitialSelection) {
-        knownExpenseNamesKeyRef.current = expenseNamesKey;
-        return new Set(expenseNames);
-      }
-
-      if (knownExpenseNamesKeyRef.current === expenseNamesKey) {
-        return prev;
-      }
-
-      const previouslyKnown = new Set(
-        knownExpenseNamesKeyRef.current.split("\0"),
-      );
-      const currentNames = new Set(expenseNames);
       const next = new Set(prev);
       let changed = false;
 
       for (const name of expenseNames) {
-        if (!previouslyKnown.has(name)) {
+        if (!next.has(name)) {
           next.add(name);
           changed = true;
         }
       }
 
       for (const name of next) {
-        if (!currentNames.has(name)) {
+        if (!expenseNames.includes(name)) {
           next.delete(name);
           changed = true;
         }
       }
 
-      knownExpenseNamesKeyRef.current = expenseNamesKey;
       return changed ? next : prev;
     });
-  }, [expenseNames, expenseNamesKey]);
+  }, [selectionScopeKey, expenseNamesKey, expenseNames]);
 
   const toggleExpenseName = React.useCallback(
     (name: string, checked: boolean) => {
