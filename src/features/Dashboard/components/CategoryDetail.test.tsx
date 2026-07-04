@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 
 vi.mock("../../../../convex/_generated/api", () => ({
@@ -59,6 +59,42 @@ vi.mock("recharts", () => ({
 
 vi.mock("@chakra-ui/react", () => ({
   Box: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Checkbox: {
+    Root: ({
+      children,
+      checked,
+      onCheckedChange,
+    }: {
+      children: React.ReactNode;
+      checked?: boolean;
+      onCheckedChange?: (details: { checked: boolean }) => void;
+    }) => {
+      const labelText =
+        React.Children.toArray(children)
+          .filter(React.isValidElement)
+          .map((child) => (child.props as { children?: React.ReactNode }).children)
+          .find((value) => typeof value === "string") ?? "expense";
+
+      return (
+        <label>
+          <input
+            type="checkbox"
+            aria-label={labelText}
+            checked={checked}
+            onChange={(event) =>
+              onCheckedChange?.({ checked: event.target.checked })
+            }
+          />
+          {children}
+        </label>
+      );
+    },
+    HiddenInput: () => null,
+    Control: () => null,
+    Label: ({ children }: { children: React.ReactNode }) => (
+      <span>{children}</span>
+    ),
+  },
   HStack: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -105,6 +141,8 @@ function makeExpense(overrides: Partial<Doc<"expenses">> = {}): Doc<"expenses"> 
   };
 }
 
+const mockExpenses = [makeExpense()];
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
@@ -120,7 +158,7 @@ describe("CategoryDetail", () => {
     vi.mocked(useQuery).mockImplementation(
       ((query: unknown) => {
         if (query === "users.viewer") return { _id: "user1" };
-        if (query === "getExpenseByCategory") return [makeExpense()];
+        if (query === "getExpenseByCategory") return mockExpenses;
         return undefined;
       }) as typeof useQuery,
     );
@@ -157,6 +195,17 @@ describe("CategoryDetail", () => {
     expect(screen.getAllByText(/paid/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/left to pay/i).length).toBeGreaterThan(0);
     expect(screen.getByText("By expense name")).toBeInTheDocument();
-    expect(screen.getByText("Rent")).toBeInTheDocument();
+    expect(screen.getAllByText("Rent").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole("checkbox", { name: "Rent" })).toBeInTheDocument();
+  });
+
+  it("renders expense name checkboxes and toggles chart visibility", () => {
+    render(<CategoryDetail />);
+    const checkbox = screen.getByRole("checkbox", { name: "Rent" });
+    expect(checkbox).toBeChecked();
+    fireEvent.click(checkbox);
+    expect(checkbox).not.toBeChecked();
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
   });
 });
