@@ -202,6 +202,8 @@ function useCreatableCombobox(props: UseCreatableComboboxProps) {
 
   React.useEffect(() => {
     itemsRef.current = initialItems;
+    // Sync list when parent options change (e.g. Convex query result).
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prop → local state sync
     setItems(initialItems);
   }, [initialItems]);
 
@@ -209,6 +211,7 @@ function useCreatableCombobox(props: UseCreatableComboboxProps) {
     if (selectedItem) {
       const next = [selectedItem];
       selectedValueRef.current = next;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- prop → local state sync
       setSelectedValue(next);
     }
   }, [selectedItem]);
