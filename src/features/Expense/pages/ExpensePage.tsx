@@ -43,6 +43,7 @@ export default function ExpensePage() {
   const monthLabel = `${getMonthLabel(monthIndex)} ${year}`;
   const isCurrentMonth =
     now.getFullYear() === year && now.getMonth() === monthIndex;
+  const currentMonthLabel = `${getMonthLabel(now.getMonth(), "short")} ${now.getFullYear()}`;
 
   const data = React.useMemo(() => {
     if (!expenses) return undefined;
@@ -86,10 +87,10 @@ export default function ExpensePage() {
           {!isCurrentMonth && (
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               onClick={() => goToMonth(now.getFullYear(), now.getMonth())}
             >
-              This month
+              Go to {currentMonthLabel}
             </Button>
           )}
           <CustomMonthPicker
