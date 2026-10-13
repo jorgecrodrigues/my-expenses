@@ -131,6 +131,7 @@ vi.mock("../modals/RemoveExpense", () => ({
   ),
 }));
 
+import { getMonthLabel } from "@/features/Dashboard/utils/dashboardMetrics";
 import ExpensePage from "./ExpensePage";
 
 function makeExpense(overrides: Partial<Expense> = {}): Expense {
@@ -165,6 +166,8 @@ const expenses = [
     date: "2025-04-01T10:00",
   }),
 ];
+
+const currentMonthLabel = `${getMonthLabel(2, "short")} 2025`;
 
 const ids = (value: unknown) =>
   (value as Expense[] | undefined)?.map((e) => e._id);
@@ -283,14 +286,16 @@ describe("ExpensePage", () => {
     monthState.current = { ...monthState.current, year: 2024, monthIndex: 6 };
     render(<ExpensePage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "This month" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: `Go to ${currentMonthLabel}` }),
+    );
     expect(goToMonth).toHaveBeenCalledWith(2025, 2);
   });
 
   it("hides the shortcut on the current month", () => {
     render(<ExpensePage />);
     expect(
-      screen.queryByRole("button", { name: "This month" }),
+      screen.queryByRole("button", { name: /^Go to / }),
     ).not.toBeInTheDocument();
   });
 });
