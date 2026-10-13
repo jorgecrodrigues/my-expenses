@@ -5,10 +5,9 @@ export interface IntersectionReturnValue<T> {
   entry: IntersectionObserverEntry | null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function useIntersectionObserver<T extends HTMLElement = any>(
-  options?: IntersectionObserverInit
-): IntersectionReturnValue<T> {
+export default function useIntersectionObserver<
+  T extends HTMLElement = HTMLElement,
+>(options?: IntersectionObserverInit): IntersectionReturnValue<T> {
   const { root, rootMargin, threshold } = options || {};
   const [entry, setEntry] = React.useState<IntersectionObserverEntry | null>(
     null

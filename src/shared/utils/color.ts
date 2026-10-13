@@ -21,9 +21,9 @@ export const generateColorByString = (input: string): string => {
   const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
   const m = l - c / 2;
 
-  let r = 0,
-    g = 0,
-    b = 0;
+  let r: number;
+  let g: number;
+  let b: number;
   if (hue >= 0 && hue < 60) {
     r = c;
     g = x;
