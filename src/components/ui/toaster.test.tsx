@@ -4,12 +4,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 
-const { toasterInstance, createToasterSpy, lastToasterProps } = vi.hoisted(
+const { toasterInstance, createToasterArgs, lastToasterProps } = vi.hoisted(
   () => {
     const instance = { id: "mock-toaster" };
     return {
       toasterInstance: instance,
-      createToasterSpy: vi.fn(() => instance),
+      // Plain array instead of vi.fn(): Vitest's clearMocks would wipe the
+      // module-load call before the test runs.
+      createToasterArgs: [] as unknown[],
       lastToasterProps: {
         current: null as {
           toaster: unknown;
@@ -22,7 +24,10 @@ const { toasterInstance, createToasterSpy, lastToasterProps } = vi.hoisted(
 );
 
 vi.mock("@chakra-ui/react", () => ({
-  createToaster: createToasterSpy,
+  createToaster: (options: unknown) => {
+    createToasterArgs.push(options);
+    return toasterInstance;
+  },
   Portal: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="portal">{children}</div>
   ),
@@ -89,11 +94,13 @@ afterEach(() => {
 
 describe("toaster", () => {
   it("creates the toaster with bottom placement, idle pause, and duration", () => {
-    expect(createToasterSpy).toHaveBeenCalledWith({
-      placement: "bottom",
-      pauseOnPageIdle: true,
-      duration: 2000,
-    });
+    expect(createToasterArgs).toEqual([
+      {
+        placement: "bottom",
+        pauseOnPageIdle: true,
+        duration: 2000,
+      },
+    ]);
     expect(toaster).toBe(toasterInstance);
   });
 });
