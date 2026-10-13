@@ -173,8 +173,10 @@ describe("CategoryDetail", () => {
   it("renders a card per bill with paid and overdue info", () => {
     renderDetail();
     expect(screen.getAllByText("1 overdue")).toHaveLength(2);
-    expect(screen.getByText(/Total \(2 bills\)/)).toBeInTheDocument();
-    expect(screen.getByText(/Total \(1 bill\)/)).toBeInTheDocument();
+    expect(screen.getByText(/^2 bills/)).toBeInTheDocument();
+    expect(screen.getByText(/^1 bill\b/)).toBeInTheDocument();
+    expect(screen.getByText(/^Paid R\$\s1\.000,00$/)).toBeInTheDocument();
+    expect(screen.getByLabelText("50% paid")).toBeInTheDocument();
   });
 
   it("filters the bill list when there are many bills", () => {
