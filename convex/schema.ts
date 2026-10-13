@@ -33,7 +33,8 @@ export default defineSchema({
     paidAt: v.optional(v.string()),
   })
     .index("by_amount", ["amount"])
-    .index("by_date", ["date"]),
+    .index("by_date", ["date"])
+    .index("by_userId_and_date", ["userId", "date"]),
   expensesFiles: defineTable({
     userId: v.id("users"),
     storageId: v.id("_storage"),

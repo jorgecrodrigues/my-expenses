@@ -1,8 +1,14 @@
 import { faker } from "@faker-js/faker";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { getAuthUserId } from "@convex-dev/auth/server";
+import {
+  internalMutation,
+  mutation,
+  query,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { paginationOptsValidator } from "convex/server";
 
 const commonExpenseArgs = {
   userId: v.id("users"),
@@ -14,62 +20,89 @@ const commonExpenseArgs = {
   paidAt: v.optional(v.string()),
 };
 
+const expenseDocValidator = v.object({
+  _id: v.id("expenses"),
+  _creationTime: v.number(),
+  ...commonExpenseArgs,
+});
+
+const MAX_BULK_UPDATE = 500;
+const MAX_RECURRING_EXPENSES = 120;
+
+async function requireUserId(
+  ctx: QueryCtx | MutationCtx,
+): Promise<Id<"users">> {
+  const userId = await getAuthUserId(ctx);
+  if (userId === null) {
+    throw new Error("Not authenticated");
+  }
+  return userId;
+}
+
 /**
- * Gets expenses for a specific user with optional ordering and pagination.
+ * Gets the authenticated user's expenses whose `date` falls between `start`
+ * and `end` (inclusive, compared as ISO-like strings).
  *
- * @param userId - The ID of the user.
- * @param orderBy - Optional ordering criteria ("by_amount" or "by_date").
- * @param order - Optional order direction ("asc" or "desc").
- * @param paginationOpts - Optional pagination options.
- * @returns A paginated list of expenses for the user.
+ * @param start - Lower bound for the expense date (e.g. "2025-01-01").
+ * @param end - Upper bound for the expense date (e.g. "2025-12-31T23:59").
+ * @returns The expenses in the range, ordered by date.
  */
-export const getExpenses = query({
+export const getExpensesInRange = query({
   args: {
-    userId: v.id("users"),
-    search: v.optional(v.string()),
-    date: v.optional(v.string()),
-    orderBy: v.optional(v.union(v.literal("by_amount"), v.literal("by_date"))),
-    order: v.optional(v.union(v.literal("asc"), v.literal("desc"))),
-    paginationOpts: paginationOptsValidator,
+    start: v.string(),
+    end: v.string(),
   },
+  returns: v.array(expenseDocValidator),
   handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
     return await ctx.db
       .query("expenses")
-      .filter((q) => q.eq(q.field("userId"), args.userId))
-      .filter((q) => {
-        if (!args.search) return true;
-        return q.or(
-          q.eq(q.field("name"), args.search),
-          q.eq(q.field("description"), args.search),
-          q.eq(q.field("category"), args.search)
-        );
-      })
-      .filter((q) => {
-        if (!args.date) return true;
+      .withIndex("by_userId_and_date", (q) =>
+        q.eq("userId", userId).gte("date", args.start).lte("date", args.end),
+      )
+      .collect();
+  },
+});
 
-        const date = new Date(args.date);
+/**
+ * Marks the given expenses as paid (keeping any existing payment date) or
+ * clears their payment date. Only expenses owned by the caller can be updated.
+ *
+ * @param ids - The expenses to update.
+ * @param paid - Whether the expenses should be marked as paid.
+ */
+export const setExpensesPaid = mutation({
+  args: {
+    ids: v.array(v.id("expenses")),
+    paid: v.boolean(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
 
-        return q.and(
-          q.gte(
-            q.field("date"),
-            new Date(date.getFullYear(), date.getMonth(), 1).toISOString() // Start of the month
-          ),
-          q.lte(
-            q.field("date"),
-            new Date( // End of the month
-              date.getFullYear(),
-              date.getMonth() + 1,
-              0,
-              23,
-              59,
-              59,
-              999
-            ).toISOString()
-          )
-        );
-      })
-      .order(args.order || "asc")
-      .paginate(args.paginationOpts);
+    if (args.ids.length > MAX_BULK_UPDATE) {
+      throw new Error(
+        `Too many expenses selected (max ${MAX_BULK_UPDATE} per update)`,
+      );
+    }
+
+    const paidAt = new Date().toISOString();
+
+    for (const id of args.ids) {
+      const expense = await ctx.db.get(id);
+      if (!expense) {
+        throw new Error("Expense not found");
+      }
+      if (expense.userId !== userId) {
+        throw new Error("Unauthorized: you don't own this expense");
+      }
+      if (args.paid && expense.paidAt) {
+        continue;
+      }
+      await ctx.db.patch(id, { paidAt: args.paid ? paidAt : undefined });
+    }
+
+    return null;
   },
 });
 
@@ -216,56 +249,55 @@ export const addExpense = mutation({
 });
 
 /**
- * Adds duplicate expenses based on a repeat interval.
+ * Creates one unpaid copy of an expense for each due date in `dates`.
+ * The schedule is computed by the client (in the user's local time zone).
  *
- * @param args - The arguments for the new expenses.
- * @returns An array of IDs of the newly created expenses.
+ * @param dates - ISO due dates of the new expenses.
+ * @returns The IDs of the newly created expenses.
  */
-export const addDuplicateExpense = mutation({
+export const addRecurringExpenses = mutation({
   args: {
-    ...commonExpenseArgs,
-    repeat: v.union(
-      v.literal("none"),
-      v.literal("daily"),
-      v.literal("weekly"),
-      v.literal("monthly"),
-      v.literal("yearly")
-    ),
-    repeatStartDate: v.string(),
-    repeatEndDate: v.string(),
+    name: v.string(),
+    description: v.optional(v.string()),
+    amount: v.number(),
+    category: v.string(),
+    dates: v.array(v.string()),
   },
+  returns: v.array(v.id("expenses")),
   handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+
+    const name = args.name.trim();
+    const category = args.category.trim();
+    if (!name) throw new Error("Expense name is required");
+    if (!category) throw new Error("Expense category is required");
+    if (!Number.isFinite(args.amount) || args.amount < 0) {
+      throw new Error("Amount must be a positive number");
+    }
+    if (args.dates.length === 0) {
+      throw new Error("Select at least one due date");
+    }
+    if (args.dates.length > MAX_RECURRING_EXPENSES) {
+      throw new Error(
+        `Too many repetitions (max ${MAX_RECURRING_EXPENSES} per request)`,
+      );
+    }
+
     const expenseIds: Id<"expenses">[] = [];
-
-    const startDate = new Date(args.repeatStartDate);
-    const endDate = new Date(args.repeatEndDate);
-
-    const iterationDate = new Date(startDate);
-
-    while (iterationDate <= endDate) {
-      const expenseId = await ctx.db.insert("expenses", {
-        userId: args.userId,
-        name: args.name,
-        description: args.description,
-        amount: args.amount,
-        category: args.category,
-        date: iterationDate.toISOString(),
-      });
-
-      expenseIds.push(expenseId);
-
-      if (args.repeat === "none") {
-        iterationDate.setTime(endDate.getTime() + 1); // Exit the loop
-        break;
-      } else if (args.repeat === "daily") {
-        iterationDate.setDate(iterationDate.getDate() + 1);
-      } else if (args.repeat === "weekly") {
-        iterationDate.setDate(iterationDate.getDate() + 7);
-      } else if (args.repeat === "monthly") {
-        iterationDate.setMonth(iterationDate.getMonth() + 1);
-      } else if (args.repeat === "yearly") {
-        iterationDate.setFullYear(iterationDate.getFullYear() + 1);
+    for (const date of args.dates) {
+      if (Number.isNaN(Date.parse(date))) {
+        throw new Error(`Invalid due date: ${date}`);
       }
+      expenseIds.push(
+        await ctx.db.insert("expenses", {
+          userId,
+          name,
+          description: args.description?.trim() || undefined,
+          amount: args.amount,
+          category,
+          date,
+        }),
+      );
     }
 
     return expenseIds;

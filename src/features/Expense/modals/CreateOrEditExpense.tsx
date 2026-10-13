@@ -22,6 +22,7 @@ import {
   dialogContentMotion,
 } from "@/shared/animation/chakraMotion";
 import { IconEdit, IconPlus } from "@tabler/icons-react";
+import { toDateTimeLocalValue } from "../utils/recurrence";
 
 type Expense = Doc<"expenses">;
 
@@ -209,11 +210,9 @@ export default function CreateOrEditExpenseDialog(
                     type="datetime-local"
                     name="date"
                     placeholder="Enter date"
-                    defaultValue={
-                      expense?.date
-                        ? new Date(expense.date).toISOString().slice(0, 16)
-                        : new Date().toISOString().slice(0, 16)
-                    }
+                    defaultValue={toDateTimeLocalValue(
+                      expense?.date ? new Date(expense.date) : new Date(),
+                    )}
                     required
                   />
                   <Field.HelperText>
@@ -244,7 +243,7 @@ export default function CreateOrEditExpenseDialog(
                     placeholder="Enter date"
                     defaultValue={
                       expense?.paidAt
-                        ? new Date(expense.paidAt).toISOString().slice(0, 16)
+                        ? toDateTimeLocalValue(new Date(expense.paidAt))
                         : ""
                     }
                   />

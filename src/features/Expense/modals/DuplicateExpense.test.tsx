@@ -1,34 +1,38 @@
 // @vitest-environment jsdom
 import React from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
+import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
+
+const { addRecurringExpenses, toasterCreate } = vi.hoisted(() => ({
+  addRecurringExpenses: vi.fn(),
+  toasterCreate: vi.fn(),
+}));
 
 vi.mock("../../../../convex/_generated/api", () => ({
   api: {
-    users: { viewer: "users.viewer" },
     expenses: {
-      addDuplicateExpense: "addDuplicateExpense",
+      addRecurringExpenses: "addRecurringExpenses",
       getExpenseCategoryOptions: "getExpenseCategoryOptions",
     },
   },
 }));
 
-const duplicateMock = vi.fn().mockResolvedValue(undefined);
-
 vi.mock("convex/react", () => ({
-  useMutation: () => duplicateMock,
-  useQuery: (fn: string) => {
-    if (fn === "users.viewer") return { _id: "user1" };
-    if (fn === "getExpenseCategoryOptions") {
-      return [{ value: "food", label: "Food" }];
-    }
-    return undefined;
-  },
+  useMutation: () => addRecurringExpenses,
+  useQuery: () => [{ value: "Software", label: "Software" }],
 }));
 
 vi.mock("@/components/ui/toaster", () => ({
-  toaster: { create: vi.fn() },
+  toaster: { create: toasterCreate },
 }));
 
 vi.mock("@/shared/animation/chakraMotion", () => ({
@@ -36,185 +40,63 @@ vi.mock("@/shared/animation/chakraMotion", () => ({
   dialogContentMotion: {},
 }));
 
-vi.mock("@/shared/components/BRLCurrencyInput", () => ({
-  default: ({
-    name,
-    placeholder,
-    defaultValue,
-  }: {
-    name?: string;
-    placeholder?: string;
-    defaultValue?: number;
-  }) => (
-    <input
-      name={name}
-      placeholder={placeholder}
-      defaultValue={defaultValue}
-      data-testid="brl-input"
-    />
-  ),
-}));
-
 vi.mock("../components/CategoryCombobox", () => ({
-  default: () => <div data-testid="category-combobox" />,
+  default: ({
+    selectedItem,
+    inputProps,
+  }: {
+    selectedItem?: string;
+    inputProps: React.InputHTMLAttributes<HTMLInputElement>;
+  }) => (
+    <input aria-label="Category" defaultValue={selectedItem} {...inputProps} />
+  ),
 }));
 
 vi.mock("@tabler/icons-react", () => ({
-  IconCopyPlusFilled: () => null,
-}));
-
-vi.mock("@chakra-ui/react", () => ({
-  Button: ({
-    children,
-    type,
-  }: {
-    children: React.ReactNode;
-    type?: string;
-  }) => <button type={(type as "submit") ?? "button"}>{children}</button>,
-  CloseButton: () => <button>Close</button>,
-  Dialog: {
-    Root: ({ children }: { children: React.ReactNode }) => (
-      <div>{children}</div>
-    ),
-    Trigger: ({ children }: { children: React.ReactNode }) => (
-      <div data-testid="dialog-trigger">{children}</div>
-    ),
-    Backdrop: () => null,
-    Positioner: ({ children }: { children: React.ReactNode }) => (
-      <div>{children}</div>
-    ),
-    Content: ({
-      children,
-      onSubmit,
-    }: {
-      children: React.ReactNode;
-      onSubmit?: React.FormEventHandler;
-    }) => (
-      <form data-testid="dialog-form" onSubmit={onSubmit}>
-        {children}
-      </form>
-    ),
-    Header: ({ children }: { children: React.ReactNode }) => (
-      <div>{children}</div>
-    ),
-    Title: ({ children }: { children: React.ReactNode }) => (
-      <h2>{children}</h2>
-    ),
-    Body: ({ children }: { children: React.ReactNode }) => (
-      <div>{children}</div>
-    ),
-    Footer: ({ children }: { children: React.ReactNode }) => (
-      <div>{children}</div>
-    ),
-    ActionTrigger: ({ children }: { children: React.ReactNode }) => (
-      <div>{children}</div>
-    ),
-    CloseTrigger: ({ children }: { children: React.ReactNode }) => (
-      <div>{children}</div>
-    ),
-  },
-  Field: {
-    Root: ({ children }: { children: React.ReactNode }) => (
-      <div>{children}</div>
-    ),
-    Label: ({ children }: { children: React.ReactNode }) => (
-      <label>{children}</label>
-    ),
-    RequiredIndicator: () => <span aria-hidden>*</span>,
-    HelperText: () => null,
-    ErrorText: () => null,
-  },
-  Flex: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  HStack: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  IconButton: ({
-    "aria-label": ariaLabel,
-    children,
-  }: {
-    "aria-label": string;
-    children: React.ReactNode;
-  }) => <button aria-label={ariaLabel}>{children}</button>,
-  Input: ({
-    name,
-    placeholder,
-    defaultValue,
-    type,
-  }: {
-    name?: string;
-    placeholder?: string;
-    defaultValue?: string;
-    type?: string;
-  }) => (
-    <input
-      name={name}
-      placeholder={placeholder}
-      defaultValue={defaultValue}
-      type={type}
-    />
-  ),
-  Portal: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  RadioCard: {
-    Root: ({
-      children,
-      name,
-      defaultValue,
-    }: {
-      children: React.ReactNode;
-      name?: string;
-      defaultValue?: string;
-    }) => (
-      <fieldset data-name={name} data-default={defaultValue}>
-        {children}
-      </fieldset>
-    ),
-    Label: ({ children }: { children: React.ReactNode }) => (
-      <legend>{children}</legend>
-    ),
-    Item: ({
-      children,
-      value,
-    }: {
-      children: React.ReactNode;
-      value: string;
-    }) => (
-      <label>
-        <input type="radio" name="repeat" value={value} defaultChecked={value === "none"} />
-        {children}
-      </label>
-    ),
-    ItemHiddenInput: () => null,
-    ItemControl: ({ children }: { children: React.ReactNode }) => (
-      <div>{children}</div>
-    ),
-    ItemContent: ({ children }: { children: React.ReactNode }) => (
-      <div>{children}</div>
-    ),
-    ItemText: ({ children }: { children: React.ReactNode }) => (
-      <span>{children}</span>
-    ),
-    ItemDescription: ({ children }: { children: React.ReactNode }) => (
-      <span>{children}</span>
-    ),
-    ItemIndicator: () => null,
-  },
+  IconCopyPlusFilled: () => <span data-testid="icon-copy" />,
 }));
 
 import type { Doc, Id } from "../../../../convex/_generated/dataModel";
 import DuplicateExpenseDialog from "./DuplicateExpense";
+import { toDateTimeLocalValue } from "../utils/recurrence";
+
+const ORIGINAL_DATE = new Date(2025, 3, 10, 12, 0);
 
 const mockExpense: Doc<"expenses"> = {
   _id: "exp1" as Id<"expenses">,
-  _creationTime: new Date("2025-04-01").getTime(),
+  _creationTime: 0,
   userId: "user1" as Id<"users">,
   name: "Subscription",
   description: "App fee",
   amount: 29.9,
   category: "Software",
-  date: "2025-04-10T12:00:00.000Z",
+  date: ORIGINAL_DATE.toISOString(),
 };
+
+const monthlyDates = (count: number) =>
+  Array.from({ length: count }, (_, index) =>
+    new Date(2025, 4 + index, 10, 12, 0).toISOString(),
+  );
+
+async function openDialog() {
+  const user = userEvent.setup();
+  render(
+    <ChakraProvider value={defaultSystem}>
+      <DuplicateExpenseDialog expense={mockExpense} />
+    </ChakraProvider>,
+  );
+  await user.click(screen.getByRole("button", { name: "Duplicate Expense" }));
+  await screen.findByRole("dialog");
+  return user;
+}
+
+beforeAll(() => {
+  globalThis.ResizeObserver ??= class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+});
 
 afterEach(() => {
   cleanup();
@@ -223,36 +105,121 @@ afterEach(() => {
 
 describe("DuplicateExpenseDialog", () => {
   it("renders the duplicate icon button trigger", () => {
-    render(<DuplicateExpenseDialog expense={mockExpense} />);
+    render(
+      <ChakraProvider value={defaultSystem}>
+        <DuplicateExpenseDialog expense={mockExpense} />
+      </ChakraProvider>,
+    );
     expect(
       screen.getByRole("button", { name: "Duplicate Expense" }),
     ).toBeInTheDocument();
   });
 
-  it("shows Duplicate Expense as the dialog title", () => {
-    render(<DuplicateExpenseDialog expense={mockExpense} />);
-    expect(screen.getByText("Duplicate Expense")).toBeInTheDocument();
+  it("pre-fills the bill details from the expense", async () => {
+    await openDialog();
+
+    expect(
+      screen.getByRole("heading", { name: "Duplicate Expense" }),
+    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Enter name")).toHaveValue(
+      "Subscription",
+    );
+    expect(
+      screen.getByPlaceholderText("Enter description (optional)"),
+    ).toHaveValue("App fee");
+    expect(screen.getByPlaceholderText("Enter amount")).toHaveValue(
+      "R$\u00a029,90",
+    );
+    expect(screen.getByLabelText("Category")).toHaveValue("Software");
   });
 
-  it("pre-fills name and description from the expense", () => {
-    render(<DuplicateExpenseDialog expense={mockExpense} />);
+  it("defaults to 12 monthly bills starting the month after the original", async () => {
+    await openDialog();
+
+    expect(screen.getByLabelText(/First due date/)).toHaveValue(
+      toDateTimeLocalValue(new Date(2025, 4, 10, 12, 0)),
+    );
     expect(
-      (screen.getByPlaceholderText("Enter name") as HTMLInputElement).defaultValue,
-    ).toBe("Subscription");
+      screen.getByRole("status", { name: "Schedule preview" }),
+    ).toHaveTextContent(/12 bills will be created · R\$\s358,80 in total/);
     expect(
-      (screen.getByPlaceholderText("Enter description") as HTMLInputElement)
-        .defaultValue,
-    ).toBe("App fee");
+      screen.getByRole("button", { name: "Create 12 bills" }),
+    ).toBeEnabled();
   });
 
-  it("calls addDuplicateExpense on form submit", () => {
-    render(<DuplicateExpenseDialog expense={mockExpense} />);
-    fireEvent.submit(screen.getByTestId("dialog-form"));
-    expect(duplicateMock).toHaveBeenCalledWith(
+  it("creates the scheduled bills and closes the dialog", async () => {
+    addRecurringExpenses.mockResolvedValue([]);
+    const user = await openDialog();
+
+    await user.click(screen.getByRole("button", { name: "Create 12 bills" }));
+
+    expect(addRecurringExpenses).toHaveBeenCalledWith({
+      name: "Subscription",
+      description: "App fee",
+      amount: 29.9,
+      category: "Software",
+      dates: monthlyDates(12),
+    });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    expect(toasterCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "success", title: "12 bills created." }),
+    );
+  });
+
+  it("sends the edited amount and omits an empty description", async () => {
+    addRecurringExpenses.mockResolvedValue([]);
+    const user = await openDialog();
+
+    fireEvent.change(screen.getByPlaceholderText("Enter amount"), {
+      target: { value: "4500" },
+    });
+    await user.clear(
+      screen.getByPlaceholderText("Enter description (optional)"),
+    );
+    await user.click(screen.getByRole("button", { name: "Just once" }));
+    await user.click(screen.getByRole("button", { name: "Create 1 bill" }));
+
+    expect(addRecurringExpenses).toHaveBeenCalledWith(
       expect.objectContaining({
-        userId: "user1",
-        date: mockExpense.date,
+        amount: 45,
+        description: undefined,
+        dates: monthlyDates(1),
       }),
     );
+  });
+
+  it("disables submission when the schedule is empty", async () => {
+    await openDialog();
+
+    fireEvent.change(
+      screen.getByRole("spinbutton", { name: "Number of bills" }),
+      {
+        target: { value: "0" },
+      },
+    );
+    expect(
+      screen.getByRole("button", { name: "Create 0 bills" }),
+    ).toBeDisabled();
+  });
+
+  it("keeps the dialog open and reports errors", async () => {
+    addRecurringExpenses.mockRejectedValue(new Error("Not authenticated"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const user = await openDialog();
+
+    await user.click(screen.getByRole("button", { name: "Create 12 bills" }));
+
+    await waitFor(() =>
+      expect(toasterCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "error",
+          title: "Failed to duplicate expense.",
+          description: "Not authenticated",
+        }),
+      ),
+    );
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });

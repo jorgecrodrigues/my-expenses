@@ -1,5 +1,11 @@
 import React from "react";
 import { Input, type InputProps } from "@chakra-ui/react";
+import { parseBRL } from "@/shared/utils/currency";
+
+interface BRLCurrencyInputProps extends InputProps {
+  /** Called with the parsed amount (NaN when empty) whenever the user types. */
+  onValueChange?: (value: number) => void;
+}
 
 function formatValue(val: string | number | undefined) {
   if (val === undefined) return "";
@@ -20,6 +26,9 @@ function formatValue(val: string | number | undefined) {
 }
 
 function formatDefaultValue(defaultValue: InputProps["defaultValue"]) {
+  if (typeof defaultValue === "number") {
+    return formatValue(defaultValue.toFixed(2));
+  }
   const hasFractionDigits = defaultValue?.toString().includes(".");
   const value = hasFractionDigits ? defaultValue : defaultValue + "00";
   return formatValue(value as string | number | undefined);
@@ -27,8 +36,9 @@ function formatDefaultValue(defaultValue: InputProps["defaultValue"]) {
 
 export default function BRLCurrencyInput({
   defaultValue,
+  onValueChange,
   ...props
-}: InputProps) {
+}: BRLCurrencyInputProps) {
   const formattedDefault = formatDefaultValue(defaultValue);
   const [value, setValue] = React.useState(formattedDefault);
   const [prevFormattedDefault, setPrevFormattedDefault] =
@@ -40,7 +50,9 @@ export default function BRLCurrencyInput({
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(formatValue(e.target.value));
+    const formatted = formatValue(e.target.value);
+    setValue(formatted);
+    onValueChange?.(parseBRL(formatted));
   };
 
   return (
