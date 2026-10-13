@@ -45,7 +45,9 @@ export default defineSchema({
     type: v.optional(
       v.union(v.literal("invoice"), v.literal("receipt"), v.literal("other"))
     ),
-  }).index("by_filename", ["filename"]),
+  })
+    .index("by_filename", ["filename"])
+    .index("by_expenseId", ["expenseId"]),
   bankAccounts: defineTable({
     userId: v.id("users"),
     accountName: v.optional(v.string()),
