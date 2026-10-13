@@ -1,639 +1,356 @@
-import { useQuery } from "convex/react";
 import React from "react";
-import { useParams } from "wouter";
-import { api } from "../../../../convex/_generated/api";
-import type { Id } from "../../../../convex/_generated/dataModel";
-import { Chart, useChart } from "@chakra-ui/charts";
 import {
-  generateColorByString,
-  getContrastingTextColor,
-} from "@/shared/utils/color";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  LabelList,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
+  Badge,
   Box,
+  Button,
   Checkbox,
+  CloseButton,
   HStack,
+  Input,
   Progress,
   SimpleGrid,
   Skeleton,
-  Span,
+  Stack,
   Text,
-  VStack,
+  Wrap,
 } from "@chakra-ui/react";
+import { formatBRL } from "@/shared/utils/currency";
+import { generateColorByString } from "@/shared/utils/color";
+import {
+  getMonthlyAmountsByKey,
+  groupBy,
+  summarizeExpenses,
+  type Expense,
+  type GroupTotals,
+} from "@/features/Dashboard/utils/dashboardMetrics";
+import MonthlyStackedBarChart from "./MonthlyStackedBarChart";
 
-type NormalizedData = {
-  month: string;
-  [key: string]: string | number;
-};
+const SEARCH_THRESHOLD = 8;
 
-type NormalizedSeries = {
-  name: string;
-  color: string;
-  stackId: string;
-};
+interface CategoryDetailProps {
+  category: string;
+  year: number;
+  /** Expenses of `category` in `year` (undefined while loading). */
+  expenses?: Expense[];
+  selectedMonthIndex: number;
+  onSelectMonth: (monthIndex: number) => void;
+  onClose: () => void;
+  now: Date;
+}
 
-// Relative bar heights (12 months) to mimic a stacked monthly chart.
-const CHART_SKELETON_BAR_HEIGHTS = [
-  38, 58, 44, 72, 50, 66, 36, 78, 48, 62, 54, 70,
-] as const;
+function BillCard({ bill, hidden }: { bill: GroupTotals; hidden: boolean }) {
+  const open = bill.pending + bill.overdue;
+  const paidPercent =
+    bill.total > 0 ? Math.round((bill.paid / bill.total) * 100) : 0;
 
-// Width of the y-axis.
-const CHART_SKELETON_Y_AXIS_W = "2.5rem";
-
-// Number of skeleton cards to show.
-const SUBCATEGORY_SKELETON_CARD_COUNT = 4;
-
-// Labels for the subcategory rows.
-const SUBCATEGORY_ROW_LABELS = ["Paid", "Left to pay", "Total"] as const;
-
-function CategoryBarChartSkeleton() {
   return (
-    <Box w="full" h="280px">
-      <VStack gap={2} h="full" align="stretch">
-        <HStack flex={1} align="flex-end" gap={2} minH={0} minW={0}>
-          <VStack
-            w={CHART_SKELETON_Y_AXIS_W}
-            flexShrink={0}
-            justify="space-between"
-            h="full"
-            py={1}
-            align="flex-end"
-          >
-            {[0, 1, 2, 3].map((i) => (
-              <Skeleton
-                key={i}
-                height="10px"
-                width="65%"
-                variant="shine"
-                borderRadius="sm"
-              />
-            ))}
-          </VStack>
-          <Box
-            flex={1}
-            minW={0}
-            h="full"
-            position="relative"
-            borderLeftWidth="1px"
-            borderBottomWidth="1px"
-            borderColor="border.subtle"
-            borderRadius="sm"
-          >
-            <VStack
-              position="absolute"
-              inset={0}
-              justify="space-between"
-              pointerEvents="none"
-              py={0}
-            >
-              {[0, 1, 2, 3, 4].map((i) => (
-                <Box
-                  key={i}
-                  w="full"
-                  borderTopWidth="1px"
-                  borderColor="border.subtle"
-                  opacity={0.55}
-                />
-              ))}
-            </VStack>
-            <HStack
-              align="flex-end"
-              justify="space-between"
-              gap={1.5}
-              h="full"
-              px={1.5}
-              pb={0}
-              position="relative"
-            >
-              {CHART_SKELETON_BAR_HEIGHTS.map((pct, i) => (
-                <Skeleton
-                  key={i}
-                  flex={1}
-                  minW={0}
-                  maxW="100%"
-                  h={`${pct}%`}
-                  variant="shine"
-                  borderTopRadius="sm"
-                />
-              ))}
-            </HStack>
-          </Box>
+    <Box
+      borderWidth="1px"
+      borderColor="border.subtle"
+      borderLeftWidth="4px"
+      borderLeftColor={generateColorByString(bill.key)}
+      borderRadius="lg"
+      px={3}
+      py={2.5}
+      bg="bg.panel"
+      opacity={hidden ? 0.5 : 1}
+    >
+      <HStack justify="space-between" align="flex-start" mb={2} gap={2}>
+        <Text fontSize="sm" fontWeight="medium" lineClamp={2} title={bill.key}>
+          {bill.key}
+        </Text>
+        {bill.overdueCount > 0 && (
+          <Badge colorPalette="red" variant="subtle" flexShrink={0}>
+            {bill.overdueCount} overdue
+          </Badge>
+        )}
+      </HStack>
+
+      <Stack gap={1}>
+        <HStack justify="space-between">
+          <Text fontSize="xs" color="fg.muted">
+            Paid
+          </Text>
+          <Text fontSize="xs" color="fg.success">
+            {formatBRL(bill.paid)}
+          </Text>
         </HStack>
-        <HStack align="flex-start" gap={2} w="full">
-          <Box w={CHART_SKELETON_Y_AXIS_W} flexShrink={0} />
-          <HStack flex={1} minW={0} gap={1.5}>
-            {CHART_SKELETON_BAR_HEIGHTS.map((_, i) => (
-              <Skeleton
-                key={i}
-                flex={1}
-                minW={0}
-                height="8px"
-                variant="shine"
-                borderRadius="sm"
-              />
-            ))}
-          </HStack>
+        <HStack justify="space-between">
+          <Text fontSize="xs" color="fg.muted">
+            Left to pay
+          </Text>
+          <Text fontSize="xs" color="fg.warning">
+            {formatBRL(open)}
+          </Text>
         </HStack>
-      </VStack>
+        <HStack justify="space-between">
+          <Text fontSize="xs" color="fg.muted">
+            Total ({bill.count} {bill.count === 1 ? "bill" : "bills"})
+          </Text>
+          <Text fontSize="xs" fontWeight="semibold">
+            {formatBRL(bill.total)}
+          </Text>
+        </HStack>
+      </Stack>
+
+      <Progress.Root
+        value={paidPercent}
+        size="xs"
+        mt={2.5}
+        colorPalette="green"
+        title={`${paidPercent}% paid`}
+      >
+        <HStack gap={2}>
+          <Progress.Track flex={1} borderRadius="full">
+            <Progress.Range borderRadius="full" />
+          </Progress.Track>
+          <Progress.ValueText fontSize="xs">{paidPercent}%</Progress.ValueText>
+        </HStack>
+      </Progress.Root>
     </Box>
   );
 }
 
-function SubcategoryGridSkeleton() {
-  return (
-    <VStack align="stretch" gap={3} w="full" mt={2}>
-      <Text fontSize="sm" fontWeight="semibold" color="fg" textAlign="right">
-        By expense name
-      </Text>
-      <SimpleGrid minChildWidth="250px" gap={3} w="full">
-        {Array.from({ length: SUBCATEGORY_SKELETON_CARD_COUNT }).map(
-          (_, index) => (
-            <Box
-              key={index}
-              borderWidth="1px"
-              borderColor="border.subtle"
-              borderRadius="lg"
-              px={3}
-              py={2.5}
-              bg="bg.panel"
-            >
-              <Skeleton
-                height="20px"
-                maxW={index % 3 === 0 ? "72%" : index % 3 === 1 ? "88%" : "64%"}
-                variant="shine"
-                borderRadius="sm"
-                mb={2}
-              />
-              <VStack align="stretch" gap={1.5}>
-                {SUBCATEGORY_ROW_LABELS.map((label) => (
-                  <HStack key={label} justify="space-between" gap={2} w="full">
-                    <Text fontSize="xs" color="fg.muted" flexShrink={0}>
-                      {label}
-                    </Text>
-                    <Skeleton
-                      height="16px"
-                      width="6.25rem"
-                      variant="shine"
-                      borderRadius="sm"
-                      flexShrink={0}
-                    />
-                  </HStack>
-                ))}
-              </VStack>
-              <Skeleton
-                height="8px"
-                w="full"
-                variant="shine"
-                borderRadius="full"
-                mt={2.5}
-              />
-            </Box>
-          ),
-        )}
-      </SimpleGrid>
-    </VStack>
+export default function CategoryDetail({
+  category,
+  year,
+  expenses,
+  selectedMonthIndex,
+  onSelectMonth,
+  onClose,
+  now,
+}: CategoryDetailProps) {
+  const [hiddenNames, setHiddenNames] = React.useState<Set<string>>(new Set());
+  const [search, setSearch] = React.useState("");
+
+  const bills = React.useMemo(
+    () => (expenses ? groupBy(expenses, (expense) => expense.name, now) : []),
+    [expenses, now],
   );
-}
 
-export default function CategoryDetail() {
-  const [selectedExpenseNames, setSelectedExpenseNames] = React.useState<
-    Set<string>
-  >(new Set());
+  const totals = React.useMemo(
+    () => summarizeExpenses(expenses ?? [], now),
+    [expenses, now],
+  );
 
-  const params = useParams<{
-    month?: string;
-    year?: string;
-    category?: string;
-  }>();
-
-  const date = React.useMemo(() => {
-    const month = params.month ? parseInt(params.month, 10) - 1 : undefined;
-    const year = params.year ? parseInt(params.year, 10) : undefined;
-    if (month === undefined || year === undefined) {
-      return undefined;
-    }
-    return new Date(year, month, 1);
-  }, [params.month, params.year]);
-
-  const user = useQuery(api.users.viewer);
-  const data = useQuery(api.expenses.getExpenseByCategory, {
-    userId: user?._id as Id<"users">,
-    category: params.category || "",
-    year: date ? date.getFullYear() : undefined,
-  });
-
-  // Calculate total expenses for the category
-  const totalByCategory = React.useMemo(() => {
-    if (!data) return 0;
-    return data.reduce((sum, item) => sum + item.amount, 0);
-  }, [data]);
-  // Calculate total expenses for the category excluding paid items
-  const totalByCategoryExceptPaid = React.useMemo(() => {
-    if (!data) return 0;
-    return data
-      .filter((item) => !item.paidAt)
-      .reduce((sum, item) => sum + item.amount, 0);
-  }, [data]);
-  // Calculate total expenses for the category by name
-  const totalByCategoryByName = React.useMemo(() => {
-    if (!data) return {};
-    return data.reduce(
-      (acc, item) => {
-        if (!acc[item.name]) {
-          acc[item.name] = 0;
-        }
-        if (!acc[`${item.name} [paid]`]) {
-          acc[`${item.name} [paid]`] = 0;
-        }
-        acc[item.name] += item.amount;
-        acc[`${item.name} [paid]`] += item.paidAt ? item.amount : 0;
-        return acc;
-      },
-      {} as Record<string, number>,
+  const chartData = React.useMemo(() => {
+    const visible = bills.filter((bill) => !hiddenNames.has(bill.key));
+    const keyByName = new Map(
+      visible.map((bill, index) => [bill.key, `k${index}`]),
     );
-  }, [data]);
+    return {
+      series: visible.map((bill, index) => ({
+        id: `k${index}`,
+        label: bill.key,
+        color: generateColorByString(bill.key),
+      })),
+      data: getMonthlyAmountsByKey(
+        (expenses ?? []).filter((expense) => keyByName.has(expense.name)),
+        year,
+        (expense) => keyByName.get(expense.name) ?? "",
+      ),
+    };
+  }, [bills, expenses, hiddenNames, year]);
 
-  const subcategoryRows = React.useMemo(() => {
-    return Object.entries(totalByCategoryByName)
-      .filter(([name]) => !name.includes("[paid]"))
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([name, total]) => ({
-        name,
-        total,
-        paid: totalByCategoryByName[`${name} [paid]`] ?? 0,
-      }));
-  }, [totalByCategoryByName]);
+  const filteredBills = React.useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return term
+      ? bills.filter((bill) => bill.key.toLowerCase().includes(term))
+      : bills;
+  }, [bills, search]);
 
-  const expenseNames = React.useMemo(() => {
-    if (!data) return [];
-    return [...new Set(data.map((item) => item.name))].sort((a, b) =>
-      a.localeCompare(b),
-    );
-  }, [data]);
-
-  const expenseNamesKey = expenseNames.join("\0");
-  const selectionScopeKey = `${params.category ?? ""}|${params.year ?? ""}`;
-  const prevSelectionScopeKeyRef = React.useRef(selectionScopeKey);
-
-  React.useEffect(() => {
-    const scopeChanged =
-      prevSelectionScopeKeyRef.current !== selectionScopeKey;
-    prevSelectionScopeKeyRef.current = selectionScopeKey;
-
-    if (expenseNames.length === 0) {
-      if (scopeChanged) {
-        setSelectedExpenseNames(new Set());
-      }
-      return;
-    }
-
-    if (scopeChanged) {
-      setSelectedExpenseNames(new Set(expenseNames));
-      return;
-    }
-
-    setSelectedExpenseNames((prev) => {
+  const toggleName = (name: string, visible: boolean) =>
+    setHiddenNames((prev) => {
       const next = new Set(prev);
-      let changed = false;
-
-      for (const name of expenseNames) {
-        if (!next.has(name)) {
-          next.add(name);
-          changed = true;
-        }
-      }
-
-      for (const name of next) {
-        if (!expenseNames.includes(name)) {
-          next.delete(name);
-          changed = true;
-        }
-      }
-
-      return changed ? next : prev;
-    });
-  }, [selectionScopeKey, expenseNamesKey, expenseNames]);
-
-  const toggleExpenseName = React.useCallback(
-    (name: string, checked: boolean) => {
-      setSelectedExpenseNames((prev) => {
-        const next = new Set(prev);
-        if (checked) {
-          next.add(name);
-        } else {
-          next.delete(name);
-        }
-        return next;
-      });
-    },
-    [],
-  );
-
-  const visibleExpenseNames = React.useMemo(
-    () => expenseNames.filter((name) => selectedExpenseNames.has(name)),
-    [expenseNames, selectedExpenseNames],
-  );
-
-  // Normalize data for chart representation
-  const normalizedData: NormalizedData[] = React.useMemo(() => {
-    if (!data) return [];
-
-    // Generate month labels
-    const months: string[] = Array.from({ length: 12 }, (_, i) => {
-      const date = new Date(0, i);
-      return date.toLocaleString(undefined, { month: "long" });
+      if (visible) next.delete(name);
+      else next.add(name);
+      return next;
     });
 
-    const monthData = months.map((month, index) => {
-      const monthItems = data.filter(
-        (item) =>
-          new Date(item.date).getMonth() === index &&
-          selectedExpenseNames.has(item.name),
-      );
+  const showAll = () => setHiddenNames(new Set());
+  const hideAll = () => setHiddenNames(new Set(bills.map((bill) => bill.key)));
 
-      const totalAmountByName = visibleExpenseNames.map((name) => {
-        const total = monthItems
-          .filter((item) => item.name === name)
-          .reduce((sum, item) => sum + item.amount, 0);
-        return { name, total };
-      });
-
-      return {
-        month,
-        ...Object.fromEntries(totalAmountByName.map((t) => [t.name, t.total])),
-      };
-    });
-
-    return monthData;
-  }, [data, selectedExpenseNames, visibleExpenseNames]);
-
-  // Prepare series for the chart representation
-  const normalizedSeries: NormalizedSeries[] = React.useMemo(() => {
-    return visibleExpenseNames.map((name) => ({
-      name,
-      color: generateColorByString(name),
-      stackId: "a",
-    }));
-  }, [visibleExpenseNames]);
-
-  const chart = useChart({
-    data: normalizedData,
-    series: normalizedSeries,
-  });
+  const open = totals.pending + totals.overdue;
+  const paidPercent =
+    totals.total > 0 ? Math.round((totals.paid / totals.total) * 100) : 0;
 
   return (
-    <VStack gap={4} align="stretch">
-      <Text fontSize="md">
-        Breakdown of expenses by month for <b>{params.category}</b> in{" "}
-        {date ? date.getFullYear() : "All Time"}
-      </Text>
-
-      <VStack mb={8} justify="center" align="center" w="full">
-        {expenseNames.length > 0 && (
-          <HStack gap={4} w="full" justifyContent="flex-end" wrap="wrap">
-            {expenseNames.map((name) => (
-              <Checkbox.Root
-                key={name}
-                checked={selectedExpenseNames.has(name)}
-                cursor="pointer"
-                onCheckedChange={(details) =>
-                  toggleExpenseName(name, details.checked === true)
-                }
-              >
-                <Checkbox.HiddenInput />
-                <Checkbox.Control
-                  borderColor={generateColorByString(name)}
-                  bg={
-                    selectedExpenseNames.has(name)
-                      ? generateColorByString(name)
-                      : undefined
-                  }
-                />
-                <Checkbox.Label fontSize="sm" lineClamp={1} title={name}>
-                  {name}
-                </Checkbox.Label>
-              </Checkbox.Root>
-            ))}
-          </HStack>
-        )}
-
-        {data === undefined ? (
-          <CategoryBarChartSkeleton />
-        ) : (
-          <Chart.Root h={280} w="full" chart={chart}>
-            <BarChart
-              data={chart.data}
-              barCategoryGap={4}
-              stackOffset="positive"
-              responsive
-            >
-              <CartesianGrid
-                stroke={chart.color("border.emphasized")}
-                strokeDasharray="3 3"
-                vertical={false}
-              />
-
-              <XAxis
-                axisLine
-                tickLine
-                dataKey={chart.key("month")}
-                stroke={chart.color("border")}
-              />
-
-              <YAxis
-                axisLine
-                tickLine
-                tickFormatter={chart.formatNumber({
-                  style: "currency",
-                  currency: "BRL",
-                  notation: "compact",
-                })}
-                stroke={chart.color("border")}
-              />
-
-              <Tooltip
-                cursor={{ fill: chart.color("background.muted") }}
-                animationDuration={0}
-                content={
-                  <Chart.Tooltip
-                    showTotal
-                    formatter={(value) =>
-                      typeof value === "number"
-                        ? value.toLocaleString("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        })
-                        : String(value ?? "")
-                    }
-                  />
-                }
-              />
-
-              {chart.series.map((item) => (
-                <Bar
-                  key={item.name}
-                  dataKey={chart.key(item.name)}
-                  fill={chart.color(item.color)}
-                  stroke={chart.color(item.color)}
-                  stackId={item.stackId}
-                  isAnimationActive={false}
-                >
-                  <LabelList
-                    dataKey={chart.key(item.name)}
-                    position="middle"
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      fill: getContrastingTextColor(
-                        generateColorByString(item?.name?.toString() ?? ""),
-                      ),
-                    }}
-                  />
-                </Bar>
-              ))}
-            </BarChart>
-          </Chart.Root>
-        )}
-
-        <VStack align="stretch" gap={2} w="full">
-          <Progress.Root
-            value={totalByCategory - totalByCategoryExceptPaid || 0}
-            max={totalByCategory || 100}
-            w="full"
-            colorPalette="gray"
-            size="md"
-            variant="subtle"
-          >
-            <HStack>
-              <Progress.ValueText>
-                {(totalByCategory - totalByCategoryExceptPaid).toLocaleString(
-                  "pt-BR",
-                  {
-                    style: "currency",
-                    currency: "BRL",
-                  },
-                )}{" "}
-                paid {" • "}
-                {totalByCategoryExceptPaid.toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                })}{" "}
-                left to pay
-              </Progress.ValueText>
-              <Progress.Track borderRadius="full" flex={1}>
-                <Progress.Range borderRadius="full" />
-              </Progress.Track>
-              <Progress.ValueText />
-            </HStack>
-          </Progress.Root>
-        </VStack>
-      </VStack>
-
-      {data === undefined ? (
-        <SubcategoryGridSkeleton />
-      ) : subcategoryRows.length > 0 ? (
-        <VStack align="stretch" gap={3} w="full" mt={2}>
-          <Text
-            fontSize="sm"
-            fontWeight="semibold"
-            color="fg"
-            textAlign="right"
-          >
-            By expense name
+    <Box
+      borderWidth="1px"
+      borderColor="border.subtle"
+      borderRadius="xl"
+      bg="bg.panel"
+      p={4}
+    >
+      <HStack justify="space-between" align="flex-start" gap={3} mb={4}>
+        <Stack gap={0.5}>
+          <Text fontSize="lg" fontWeight="bold">
+            {category} · {year}
           </Text>
-          <SimpleGrid minChildWidth={250} gap={3} w="full">
-            {subcategoryRows.map(({ name, total, paid }) => {
-              const leftToPay = Math.max(0, total - paid);
-              return (
-                <Box
-                  key={name}
-                  borderWidth="1px"
-                  borderColor="border.subtle"
-                  borderRadius="lg"
-                  px={3}
-                  py={2.5}
-                  bg="bg.panel"
-                >
-                  <Text
-                    fontSize="sm"
-                    fontWeight="medium"
-                    color="fg"
-                    mb={2}
-                    lineClamp={2}
-                    title={name}
-                  >
-                    {name}
-                  </Text>
+          <Text fontSize="sm" color="fg.muted">
+            Breakdown of the year by bill
+          </Text>
+        </Stack>
+        <CloseButton
+          size="sm"
+          aria-label="Close category detail"
+          onClick={onClose}
+        />
+      </HStack>
 
-                  <VStack align="stretch" gap={1.5}>
-                    <HStack justify="space-between" gap={2}>
-                      <Text fontSize="xs" color="fg.muted">
-                        Paid
-                      </Text>
-                      <Span fontSize="xs" color="fg.success">
-                        {paid.toLocaleString("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        })}
-                      </Span>
-                    </HStack>
-                    <HStack justify="space-between" gap={2}>
-                      <Text fontSize="xs" color="fg.muted">
-                        Left to pay
-                      </Text>
-                      <Span fontSize="xs" color="fg.warning">
-                        {leftToPay.toLocaleString("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        })}
-                      </Span>
-                    </HStack>
-                    <HStack justify="space-between" gap={2}>
-                      <Text fontSize="xs" color="fg.muted">
-                        Total
-                      </Text>
-                      <Span fontSize="xs" color="fg.error">
-                        {total.toLocaleString("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        })}
-                      </Span>
-                    </HStack>
-                  </VStack>
+      {expenses === undefined ? (
+        <Stack gap={4}>
+          <Skeleton height="40px" variant="shine" />
+          <Skeleton height="280px" variant="shine" />
+        </Stack>
+      ) : (
+        <Stack gap={5}>
+          <Stack gap={2}>
+            <HStack gap={6} wrap="wrap">
+              <Text fontSize="sm">
+                Total <b>{formatBRL(totals.total)}</b>
+              </Text>
+              <Text fontSize="sm" color="fg.success">
+                Paid <b>{formatBRL(totals.paid)}</b>
+              </Text>
+              <Text fontSize="sm" color="fg.warning">
+                Left to pay <b>{formatBRL(open)}</b>
+              </Text>
+              {totals.overdue > 0 && (
+                <Text fontSize="sm" color="fg.error">
+                  Overdue <b>{formatBRL(totals.overdue)}</b>
+                </Text>
+              )}
+            </HStack>
+            <Progress.Root
+              value={paidPercent}
+              size="sm"
+              colorPalette="green"
+              aria-label="Paid percentage"
+            >
+              <HStack gap={2}>
+                <Progress.Track flex={1} borderRadius="full">
+                  <Progress.Range borderRadius="full" />
+                </Progress.Track>
+                <Progress.ValueText fontSize="xs">
+                  {paidPercent}% paid
+                </Progress.ValueText>
+              </HStack>
+            </Progress.Root>
+          </Stack>
 
-                  <Progress.Root
-                    variant="subtle"
-                    value={paid}
-                    max={total}
-                    w="full"
-                    mt={2.5}
+          {bills.length > 0 && (
+            <Stack gap={2}>
+              <HStack justify="space-between" wrap="wrap" gap={2}>
+                <Text fontSize="sm" fontWeight="semibold">
+                  Bills shown in the chart ({bills.length - hiddenNames.size}/
+                  {bills.length})
+                </Text>
+                <HStack gap={2}>
+                  {bills.length > SEARCH_THRESHOLD && (
+                    <Input
+                      size="xs"
+                      w="12rem"
+                      placeholder="Filter bills..."
+                      aria-label="Filter bills"
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                    />
+                  )}
+                  <Button
                     size="xs"
-                    colorPalette="gray"
-                    title={`${Math.round((paid / total) * 100)}% paid`}
+                    variant="ghost"
+                    onClick={showAll}
+                    disabled={hiddenNames.size === 0}
                   >
-                    <HStack>
-                      <Progress.Track borderRadius="full" flex={1}>
-                        <Progress.Range borderRadius="full" />
-                      </Progress.Track>
-                      <Progress.ValueText>
-                        {Math.round((paid / total) * 100)}%
-                      </Progress.ValueText>
-                    </HStack>
-                  </Progress.Root>
-                </Box>
-              );
-            })}
-          </SimpleGrid>
-        </VStack>
-      ) : null}
-    </VStack>
+                    Select all
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    onClick={hideAll}
+                    disabled={hiddenNames.size === bills.length}
+                  >
+                    Clear
+                  </Button>
+                </HStack>
+              </HStack>
+              <Wrap gap={2}>
+                {filteredBills.map((bill) => {
+                  const color = generateColorByString(bill.key);
+                  const visible = !hiddenNames.has(bill.key);
+                  return (
+                    <Checkbox.Root
+                      key={bill.key}
+                      size="sm"
+                      checked={visible}
+                      onCheckedChange={(details) =>
+                        toggleName(bill.key, details.checked === true)
+                      }
+                      borderWidth="1px"
+                      borderColor={visible ? color : "border.subtle"}
+                      borderRadius="full"
+                      px={2.5}
+                      py={1}
+                      cursor="pointer"
+                      opacity={visible ? 1 : 0.6}
+                    >
+                      <Checkbox.HiddenInput />
+                      <Checkbox.Control
+                        borderColor={color}
+                        bg={visible ? color : undefined}
+                        color={visible ? "white" : undefined}
+                      />
+                      <Checkbox.Label
+                        fontSize="xs"
+                        maxW="14rem"
+                        truncate
+                        title={bill.key}
+                      >
+                        {bill.key}
+                      </Checkbox.Label>
+                      <Text fontSize="xs" color="fg.muted">
+                        {formatBRL(bill.total, true)}
+                      </Text>
+                    </Checkbox.Root>
+                  );
+                })}
+              </Wrap>
+            </Stack>
+          )}
+
+          {bills.length === 0 ? (
+            <Box py={12} textAlign="center" color="fg.muted">
+              No expenses in {category} for {year}.
+            </Box>
+          ) : chartData.series.length === 0 ? (
+            <Box py={12} textAlign="center" color="fg.muted">
+              Select at least one bill to see the chart.
+            </Box>
+          ) : (
+            <MonthlyStackedBarChart
+              data={chartData.data}
+              series={chartData.series}
+              selectedMonthIndex={selectedMonthIndex}
+              onSelectMonth={onSelectMonth}
+              showLegend={false}
+              height={280}
+            />
+          )}
+
+          {bills.length > 0 && (
+            <SimpleGrid minChildWidth="240px" gap={3}>
+              {bills.map((bill) => (
+                <BillCard
+                  key={bill.key}
+                  bill={bill}
+                  hidden={hiddenNames.has(bill.key)}
+                />
+              ))}
+            </SimpleGrid>
+          )}
+        </Stack>
+      )}
+    </Box>
   );
 }

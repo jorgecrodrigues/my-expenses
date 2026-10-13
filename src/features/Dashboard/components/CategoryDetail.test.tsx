@@ -1,211 +1,199 @@
 // @vitest-environment jsdom
 import React from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
+import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 
-vi.mock("../../../../convex/_generated/api", () => ({
-  api: {
-    users: { viewer: "users.viewer" },
-    expenses: { getExpenseByCategory: "getExpenseByCategory" },
+type ChartProps = {
+  data: Record<string, number>[];
+  series: Array<{ id: string; label: string }>;
+  selectedMonthIndex?: number;
+  onSelectMonth?: (monthIndex: number) => void;
+};
+
+const { chartProps } = vi.hoisted(() => ({
+  chartProps: { current: null as ChartProps | null },
+}));
+
+vi.mock("./MonthlyStackedBarChart", () => ({
+  default: (props: ChartProps) => {
+    chartProps.current = props;
+    return <div data-testid="stacked-chart" />;
   },
 }));
 
-vi.mock("convex/react", () => ({
-  useQuery: vi.fn(),
-}));
-
-vi.mock("wouter", () => ({
-  useParams: vi.fn(),
-}));
-
-vi.mock("@/shared/utils/color", () => ({
-  generateColorByString: () => "#336699",
-  getContrastingTextColor: () => "#ffffff",
-}));
-
-vi.mock("@chakra-ui/charts", () => ({
-  Chart: {
-    Root: ({ children }: { children: React.ReactNode }) => (
-      <div data-testid="chart-root">{children}</div>
-    ),
-    Tooltip: () => null,
-  },
-  useChart: (opts: {
-    data: unknown[];
-    series: Array<{ name: string; color: string; stackId: string }>;
-  }) => ({
-    data: opts.data,
-    series: opts.series,
-    key: (k: string) => k,
-    color: (c: string) => c,
-    formatNumber: () => (n: number) => String(n),
-  }),
-}));
-
-vi.mock("recharts", () => ({
-  BarChart: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="recharts-bar-chart">{children}</div>
-  ),
-  Bar: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="recharts-bar">{children}</div>
-  ),
-  CartesianGrid: () => null,
-  XAxis: () => null,
-  YAxis: () => null,
-  Tooltip: () => null,
-  LabelList: () => null,
-}));
-
-vi.mock("@chakra-ui/react", () => ({
-  Box: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Checkbox: {
-    Root: ({
-      children,
-      checked,
-      onCheckedChange,
-    }: {
-      children: React.ReactNode;
-      checked?: boolean;
-      onCheckedChange?: (details: { checked: boolean }) => void;
-    }) => {
-      const labelText =
-        React.Children.toArray(children)
-          .filter(React.isValidElement)
-          .map((child) => (child.props as { children?: React.ReactNode }).children)
-          .find((value) => typeof value === "string") ?? "expense";
-
-      return (
-        <label>
-          <input
-            type="checkbox"
-            aria-label={labelText}
-            checked={checked}
-            onChange={(event) =>
-              onCheckedChange?.({ checked: event.target.checked })
-            }
-          />
-          {children}
-        </label>
-      );
-    },
-    HiddenInput: () => null,
-    Control: () => null,
-    Label: ({ children }: { children: React.ReactNode }) => (
-      <span>{children}</span>
-    ),
-  },
-  HStack: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  Progress: {
-    Root: ({ children }: { children: React.ReactNode }) => (
-      <div data-testid="progress-root">{children}</div>
-    ),
-    ValueText: ({ children }: { children: React.ReactNode }) => (
-      <span>{children}</span>
-    ),
-    Track: ({ children }: { children: React.ReactNode }) => (
-      <div>{children}</div>
-    ),
-    Range: () => null,
-  },
-  SimpleGrid: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  Skeleton: () => <div data-testid="skeleton" />,
-  Span: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
-  Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
-  VStack: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}));
-
-import { useQuery } from "convex/react";
-import { useParams } from "wouter";
-import type { Doc, Id } from "../../../../convex/_generated/dataModel";
+import type { Id } from "../../../../convex/_generated/dataModel";
+import type { Expense } from "@/features/Dashboard/utils/dashboardMetrics";
 import CategoryDetail from "./CategoryDetail";
 
-function makeExpense(overrides: Partial<Doc<"expenses">> = {}): Doc<"expenses"> {
+const NOW = new Date(2025, 2, 15, 12, 0);
+
+function makeExpense(overrides: Partial<Expense> = {}): Expense {
   return {
     _id: "exp1" as Id<"expenses">,
-    _creationTime: Date.now(),
+    _creationTime: 0,
     userId: "user1" as Id<"users">,
     name: "Rent",
-    description: "Monthly",
-    amount: 200,
+    amount: 1000,
     category: "Housing",
-    date: "2025-03-15T12:00:00.000Z",
-    paidAt: undefined,
+    date: "2025-01-10T10:00",
     ...overrides,
   };
 }
 
-const mockExpenses = [makeExpense()];
+const expenses = [
+  makeExpense({ paidAt: "2025-01-10T10:00" }),
+  makeExpense({ date: "2025-02-10T10:00" }),
+  makeExpense({ name: "Condo fee", amount: 300, date: "2025-02-10T10:00" }),
+];
+
+beforeAll(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+});
 
 afterEach(() => {
   cleanup();
-  vi.clearAllMocks();
+  chartProps.current = null;
 });
 
+function renderDetail(
+  props: Partial<React.ComponentProps<typeof CategoryDetail>> = {},
+) {
+  const onClose = vi.fn();
+  const onSelectMonth = vi.fn();
+  render(
+    <ChakraProvider value={defaultSystem}>
+      <CategoryDetail
+        category="Housing"
+        year={2025}
+        expenses={expenses}
+        selectedMonthIndex={1}
+        onSelectMonth={onSelectMonth}
+        onClose={onClose}
+        now={NOW}
+        {...props}
+      />
+    </ChakraProvider>,
+  );
+  return { onClose, onSelectMonth };
+}
+
 describe("CategoryDetail", () => {
-  beforeEach(() => {
-    vi.mocked(useParams).mockReturnValue({
-      month: "3",
-      year: "2025",
-      category: "Housing",
+  it("shows the title and a skeleton while loading", () => {
+    renderDetail({ expenses: undefined });
+    expect(screen.getByText("Housing · 2025")).toBeInTheDocument();
+    expect(screen.queryByTestId("stacked-chart")).not.toBeInTheDocument();
+  });
+
+  it("shows an empty state when the category has no expenses", () => {
+    renderDetail({ expenses: [] });
+    expect(
+      screen.getByText("No expenses in Housing for 2025."),
+    ).toBeInTheDocument();
+  });
+
+  it("summarizes the category totals", () => {
+    renderDetail();
+    expect(screen.getByText(/R\$\s2\.300,00/).parentElement).toHaveTextContent(
+      /^Total/,
+    );
+    expect(
+      screen
+        .getAllByText(/R\$\s1\.300,00/)
+        .map((el) => el.parentElement?.textContent?.split(/\s/)[0]),
+    ).toEqual(["Left", "Overdue"]);
+    expect(screen.getByText("43% paid")).toBeInTheDocument();
+  });
+
+  it("charts one series per bill name and forwards month selection", () => {
+    const { onSelectMonth } = renderDetail();
+
+    expect(chartProps.current?.series.map((s) => s.label)).toEqual([
+      "Rent",
+      "Condo fee",
+    ]);
+    expect(chartProps.current?.data[1]).toEqual({ k0: 1000, k1: 300 });
+    expect(chartProps.current?.selectedMonthIndex).toBe(1);
+
+    chartProps.current?.onSelectMonth?.(3);
+    expect(onSelectMonth).toHaveBeenCalledWith(3);
+  });
+
+  it("toggles bills shown in the chart", async () => {
+    const user = userEvent.setup();
+    renderDetail();
+    const rent = screen.getByRole("checkbox", { name: /Rent/ });
+    expect(rent).toBeChecked();
+
+    await user.click(rent);
+    await waitFor(() =>
+      expect(chartProps.current?.series.map((s) => s.label)).toEqual([
+        "Condo fee",
+      ]),
+    );
+    expect(rent).not.toBeChecked();
+    expect(
+      screen.getByText("Bills shown in the chart (1/2)"),
+    ).toBeInTheDocument();
+
+    await user.click(rent);
+    await waitFor(() =>
+      expect(chartProps.current?.series.map((s) => s.label)).toEqual([
+        "Rent",
+        "Condo fee",
+      ]),
+    );
+  });
+
+  it("clears and selects all bills", () => {
+    renderDetail();
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    expect(
+      screen.getByText("Select at least one bill to see the chart."),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("stacked-chart")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Select all" }));
+    expect(screen.getByTestId("stacked-chart")).toBeInTheDocument();
+  });
+
+  it("renders a card per bill with paid and overdue info", () => {
+    renderDetail();
+    expect(screen.getAllByText("1 overdue")).toHaveLength(2);
+    expect(screen.getByText(/Total \(2 bills\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Total \(1 bill\)/)).toBeInTheDocument();
+  });
+
+  it("filters the bill list when there are many bills", () => {
+    const many = Array.from({ length: 10 }, (_, i) =>
+      makeExpense({ name: `Bill ${i}` }),
+    );
+    renderDetail({ expenses: many });
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Filter bills" }), {
+      target: { value: "Bill 3" },
     });
-    vi.mocked(useQuery).mockImplementation(
-      ((query: unknown) => {
-        if (query === "users.viewer") return { _id: "user1" };
-        if (query === "getExpenseByCategory") return mockExpenses;
-        return undefined;
-      }) as typeof useQuery,
+    expect(screen.getAllByRole("checkbox")).toHaveLength(1);
+  });
+
+  it("calls onClose from the close button", () => {
+    const { onClose } = renderDetail();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Close category detail" }),
     );
-  });
-
-  it("shows chart and subcategory skeletons while expenses are loading", () => {
-    vi.mocked(useQuery).mockImplementation(
-      ((query: unknown) => {
-        if (query === "users.viewer") return { _id: "user1" };
-        if (query === "getExpenseByCategory") return undefined;
-        return undefined;
-      }) as typeof useQuery,
-    );
-    render(<CategoryDetail />);
-    expect(screen.getAllByTestId("skeleton").length).toBeGreaterThan(0);
-    expect(screen.queryByTestId("chart-root")).not.toBeInTheDocument();
-  });
-
-  it("renders the breakdown title with category and year from the route", () => {
-    render(<CategoryDetail />);
-    const title = screen.getByText(/Breakdown of expenses by month for/);
-    expect(title).toHaveTextContent("Housing");
-    expect(title).toHaveTextContent("2025");
-  });
-
-  it("renders the chart when data is available", () => {
-    render(<CategoryDetail />);
-    expect(screen.getByTestId("chart-root")).toBeInTheDocument();
-    expect(screen.getByTestId("recharts-bar-chart")).toBeInTheDocument();
-  });
-
-  it("renders paid progress copy and the by-name grid for expenses", () => {
-    render(<CategoryDetail />);
-    expect(screen.getAllByText(/paid/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/left to pay/i).length).toBeGreaterThan(0);
-    expect(screen.getByText("By expense name")).toBeInTheDocument();
-    expect(screen.getAllByText("Rent").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByRole("checkbox", { name: "Rent" })).toBeInTheDocument();
-  });
-
-  it("renders expense name checkboxes and toggles chart visibility", () => {
-    render(<CategoryDetail />);
-    const checkbox = screen.getByRole("checkbox", { name: "Rent" });
-    expect(checkbox).toBeChecked();
-    fireEvent.click(checkbox);
-    expect(checkbox).not.toBeChecked();
-    fireEvent.click(checkbox);
-    expect(checkbox).toBeChecked();
+    expect(onClose).toHaveBeenCalled();
   });
 });
