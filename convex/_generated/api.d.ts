@@ -14,6 +14,8 @@ import type * as bankAccounts from "../bankAccounts.js";
 import type * as expenses from "../expenses.js";
 import type * as expensesfiles from "../expensesfiles.js";
 import type * as http from "../http.js";
+import type * as lib_auth from "../lib/auth.js";
+import type * as lib_expenseFileRules from "../lib/expenseFileRules.js";
 import type * as users from "../users.js";
 
 import type {
@@ -29,6 +31,8 @@ declare const fullApi: ApiFromModules<{
   expenses: typeof expenses;
   expensesfiles: typeof expensesfiles;
   http: typeof http;
+  "lib/auth": typeof lib_auth;
+  "lib/expenseFileRules": typeof lib_expenseFileRules;
   users: typeof users;
 }>;
 

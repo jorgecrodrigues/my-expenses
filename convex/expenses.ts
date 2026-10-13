@@ -1,14 +1,8 @@
 import { faker } from "@faker-js/faker";
-import { getAuthUserId } from "@convex-dev/auth/server";
-import {
-  internalMutation,
-  mutation,
-  query,
-  type MutationCtx,
-  type QueryCtx,
-} from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
+import { requireUserId } from "./lib/auth";
 
 const commonExpenseArgs = {
   userId: v.id("users"),
@@ -28,16 +22,6 @@ const expenseDocValidator = v.object({
 
 const MAX_BULK_UPDATE = 500;
 const MAX_RECURRING_EXPENSES = 120;
-
-async function requireUserId(
-  ctx: QueryCtx | MutationCtx,
-): Promise<Id<"users">> {
-  const userId = await getAuthUserId(ctx);
-  if (userId === null) {
-    throw new Error("Not authenticated");
-  }
-  return userId;
-}
 
 /**
  * Gets the authenticated user's expenses whose `date` falls between `start`
