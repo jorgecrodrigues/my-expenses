@@ -1,93 +1,145 @@
+import React from "react";
 import {
   Box,
   Heading,
   HStack,
   parseDate,
+  SimpleGrid,
+  Stack,
   Text,
-  VStack,
   type DatePickerValueChangeDetails,
 } from "@chakra-ui/react";
-import CategoryBarSegment from "../components/CategoryBarSegment";
-import CategoryDetail from "../components/CategoryDetail";
-import { useLocation, useParams } from "wouter";
-import React from "react";
 import CustomMonthPicker from "@/shared/components/CustomMonthPicker";
+import useDashboardRoute from "@/features/Dashboard/hooks/useDashboardRoute";
+import useDashboardExpenses from "@/features/Dashboard/hooks/useDashboardExpenses";
+import {
+  filterByMonth,
+  filterByYear,
+  getMonthLabel,
+  getPreviousMonth,
+  summarizeExpenses,
+} from "@/features/Dashboard/utils/dashboardMetrics";
+import SummaryCards from "../components/SummaryCards";
+import MonthlyTrendChart from "../components/MonthlyTrendChart";
+import CategoryBreakdown from "../components/CategoryBreakdown";
+import CategoryDetail from "../components/CategoryDetail";
+import BillsTable from "@/features/Expense/components/BillsTable";
 
 export default function DashboardPage() {
-  const params = useParams<{
-    month?: string;
-    year?: string;
-    category?: string;
-  }>();
+  const { date, year, monthIndex, category, goToMonth, selectCategory } =
+    useDashboardRoute();
+  const expenses = useDashboardExpenses(year);
+  const [now] = React.useState(() => new Date());
 
-  const date: Date = React.useMemo(() => {
-    const month = params.month ? parseInt(params.month, 10) - 1 : undefined;
-    const year = params.year ? parseInt(params.year) : undefined;
+  const monthLabel = `${getMonthLabel(monthIndex)} ${year}`;
 
-    if (month === undefined || year === undefined) {
-      return new Date();
-    }
+  const data = React.useMemo(() => {
+    if (!expenses) return undefined;
 
-    return new Date(year, month, 1);
-  }, [params.month, params.year]);
+    const previous = getPreviousMonth(year, monthIndex);
+    const yearExpenses = filterByYear(expenses, year);
+    const monthExpenses = filterByMonth(expenses, year, monthIndex);
 
-  const [, setLocation] = useLocation();
+    return {
+      yearExpenses,
+      monthExpenses,
+      currentTotals: summarizeExpenses(monthExpenses, now),
+      previousTotals: summarizeExpenses(
+        filterByMonth(expenses, previous.year, previous.monthIndex),
+        now,
+      ),
+    };
+  }, [expenses, monthIndex, now, year]);
 
-  // Handle previous month navigation
-  const handlePreviousMonth = React.useCallback(() => {
-    const previousMonth = new Date(date);
-    previousMonth.setMonth(date.getMonth() - 1);
-    setLocation(
-      `/dashboard/month/${previousMonth.getMonth() + 1}/year/${previousMonth.getFullYear()}${
-        params.category ? `/category/${params.category}` : ""
-      }`,
-    );
-  }, [date, params.category, setLocation]);
+  const categoryYearExpenses = React.useMemo(
+    () =>
+      category
+        ? data?.yearExpenses.filter((expense) => expense.category === category)
+        : undefined,
+    [category, data],
+  );
 
-  // Handle next month navigation
-  const handleNextMonth = React.useCallback(() => {
-    const nextMonth = new Date(date);
-    nextMonth.setMonth(date.getMonth() + 1);
-    setLocation(
-      `/dashboard/month/${nextMonth.getMonth() + 1}/year/${nextMonth.getFullYear()}${
-        params.category ? `/category/${params.category}` : ""
-      }`,
-    );
-  }, [date, params.category, setLocation]);
+  const billsExpenses = React.useMemo(
+    () =>
+      category
+        ? data?.monthExpenses.filter((expense) => expense.category === category)
+        : data?.monthExpenses,
+    [category, data],
+  );
+
+  const handleSelectMonth = React.useCallback(
+    (nextMonthIndex: number) => goToMonth(year, nextMonthIndex),
+    [goToMonth, year],
+  );
 
   const handleDateChange = (details: DatePickerValueChangeDetails) => {
-    const month = details.value?.[0]?.month ?? date.getMonth() + 1;
-    const year = details.value?.[0]?.year ?? date.getFullYear();
-
-    setLocation(
-      `/dashboard/month/${month}/year/${year}${params.category ? `/category/${params.category}` : ""}`,
-    );
+    const picked = details.value?.[0];
+    goToMonth(picked?.year ?? year, (picked?.month ?? monthIndex + 1) - 1);
   };
 
   return (
-    <>
-      <HStack mb={8} gap="md" justify="space-between" align="flex-end">
-        <VStack align="flex-start" gap="md">
+    <Stack gap={6}>
+      <HStack gap="md" justify="space-between" align="flex-end" wrap="wrap">
+        <Stack gap={1}>
           <Heading>Dashboard</Heading>
-          <Text>Welcome to the Dashboard!</Text>
-        </VStack>
+          <Text color="fg.muted">Overview of your bills for {monthLabel}</Text>
+        </Stack>
         <CustomMonthPicker
           size="xl"
           value={[parseDate(date)]}
-          onPreviousMonth={handlePreviousMonth}
-          onNextMonth={handleNextMonth}
+          onPreviousMonth={() => goToMonth(year, monthIndex - 1)}
+          onNextMonth={() => goToMonth(year, monthIndex + 1)}
           onValueChange={handleDateChange}
         />
       </HStack>
 
-      <VStack spaceY={14} align="stretch">
-        <Box>
-          <CategoryBarSegment />
+      <SummaryCards
+        current={data?.currentTotals}
+        previous={data?.previousTotals}
+      />
+
+      <SimpleGrid columns={{ base: 1, lg: 5 }} gap={4}>
+        <Box gridColumn={{ lg: "span 3" }} minW={0}>
+          <MonthlyTrendChart
+            expenses={data?.yearExpenses}
+            year={year}
+            selectedMonthIndex={monthIndex}
+            onSelectMonth={handleSelectMonth}
+            now={now}
+          />
         </Box>
-        <Box>
-          <CategoryDetail />
+        <Box gridColumn={{ lg: "span 2" }} minW={0}>
+          <CategoryBreakdown
+            expenses={data?.monthExpenses}
+            monthLabel={monthLabel}
+            selectedCategory={category}
+            onSelectCategory={selectCategory}
+            now={now}
+          />
         </Box>
-      </VStack>
-    </>
+      </SimpleGrid>
+
+      {category && (
+        <CategoryDetail
+          key={`${category}-${year}`}
+          category={category}
+          year={year}
+          expenses={categoryYearExpenses}
+          selectedMonthIndex={monthIndex}
+          onSelectMonth={handleSelectMonth}
+          onClose={() => selectCategory(undefined)}
+          now={now}
+        />
+      )}
+
+      <BillsTable
+        key={`${year}-${monthIndex}-${category ?? ""}`}
+        expenses={billsExpenses}
+        monthLabel={monthLabel}
+        category={category}
+        onCategoryChange={selectCategory}
+        now={now}
+      />
+    </Stack>
   );
 }

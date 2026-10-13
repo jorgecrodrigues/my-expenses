@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   act,
   cleanup,
@@ -30,7 +30,10 @@ describe("BRLCurrencyInput", () => {
 
     it("sets inputMode to numeric", () => {
       renderWithChakra(<BRLCurrencyInput defaultValue={0} />);
-      expect(screen.getByRole("textbox")).toHaveAttribute("inputMode", "numeric");
+      expect(screen.getByRole("textbox")).toHaveAttribute(
+        "inputMode",
+        "numeric",
+      );
     });
 
     it("forwards name prop to the input", () => {
@@ -76,6 +79,11 @@ describe("BRLCurrencyInput", () => {
       expect(screen.getByRole("textbox")).toHaveValue("R$\u00a00,00");
     });
 
+    it("pads numeric defaultValues with a single decimal digit", () => {
+      renderWithChakra(<BRLCurrencyInput defaultValue={29.9} />);
+      expect(screen.getByRole("textbox")).toHaveValue("R$\u00a029,90");
+    });
+
     it("formats a large value correctly", () => {
       // 1500 → "150000" → 1500 → R$ 1.500,00
       renderWithChakra(<BRLCurrencyInput defaultValue={1500} />);
@@ -105,6 +113,20 @@ describe("BRLCurrencyInput", () => {
       const input = screen.getByRole("textbox");
       fireEvent.change(input, { target: { value: "abc" } });
       expect(input).toHaveValue("");
+    });
+
+    it("reports the parsed amount through onValueChange", () => {
+      const onValueChange = vi.fn();
+      renderWithChakra(
+        <BRLCurrencyInput defaultValue={0} onValueChange={onValueChange} />,
+      );
+      const input = screen.getByRole("textbox");
+
+      fireEvent.change(input, { target: { value: "409549" } });
+      expect(onValueChange).toHaveBeenLastCalledWith(4095.49);
+
+      fireEvent.change(input, { target: { value: "" } });
+      expect(onValueChange).toHaveBeenLastCalledWith(NaN);
     });
   });
 
