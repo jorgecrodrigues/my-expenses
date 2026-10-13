@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  Badge,
   Box,
   Button,
   Checkbox,
@@ -47,66 +46,58 @@ function BillCard({ bill, hidden }: { bill: GroupTotals; hidden: boolean }) {
     <Box
       borderWidth="1px"
       borderColor="border.subtle"
-      borderLeftWidth="4px"
+      borderLeftWidth="3px"
       borderLeftColor={generateColorByString(bill.key)}
-      borderRadius="lg"
-      px={3}
-      py={2.5}
+      borderRadius="md"
+      px={2.5}
+      py={2}
       bg="bg.panel"
       opacity={hidden ? 0.5 : 1}
     >
-      <HStack justify="space-between" align="flex-start" mb={2} gap={2}>
-        <Text fontSize="sm" fontWeight="medium" lineClamp={2} title={bill.key}>
+      <HStack justify="space-between" gap={2}>
+        <Text fontSize="sm" fontWeight="medium" truncate title={bill.key}>
           {bill.key}
         </Text>
-        {bill.overdueCount > 0 && (
-          <Badge colorPalette="red" variant="subtle" flexShrink={0}>
-            {bill.overdueCount} overdue
-          </Badge>
-        )}
+        <Text fontSize="sm" fontWeight="semibold" flexShrink={0}>
+          {formatBRL(bill.total)}
+        </Text>
       </HStack>
 
-      <Stack gap={1}>
-        <HStack justify="space-between">
-          <Text fontSize="xs" color="fg.muted">
-            Paid
-          </Text>
-          <Text fontSize="xs" color="fg.success">
-            {formatBRL(bill.paid)}
-          </Text>
-        </HStack>
-        <HStack justify="space-between">
-          <Text fontSize="xs" color="fg.muted">
-            Left to pay
-          </Text>
-          <Text fontSize="xs" color="fg.warning">
-            {formatBRL(open)}
-          </Text>
-        </HStack>
-        <HStack justify="space-between">
-          <Text fontSize="xs" color="fg.muted">
-            Total ({bill.count} {bill.count === 1 ? "bill" : "bills"})
-          </Text>
-          <Text fontSize="xs" fontWeight="semibold">
-            {formatBRL(bill.total)}
-          </Text>
-        </HStack>
-      </Stack>
+      <HStack justify="space-between" gap={2} fontSize="xs" color="fg.muted">
+        <Text>
+          {bill.count} {bill.count === 1 ? "bill" : "bills"}
+          {bill.overdueCount > 0 && (
+            <>
+              {" · "}
+              <Text as="span" color="fg.error">
+                {bill.overdueCount} overdue
+              </Text>
+            </>
+          )}
+        </Text>
+        <Text flexShrink={0}>{paidPercent}%</Text>
+      </HStack>
 
       <Progress.Root
         value={paidPercent}
         size="xs"
-        mt={2.5}
+        my={1.5}
         colorPalette="green"
-        title={`${paidPercent}% paid`}
+        aria-label={`${paidPercent}% paid`}
       >
-        <HStack gap={2}>
-          <Progress.Track flex={1} borderRadius="full">
-            <Progress.Range borderRadius="full" />
-          </Progress.Track>
-          <Progress.ValueText fontSize="xs">{paidPercent}%</Progress.ValueText>
-        </HStack>
+        <Progress.Track borderRadius="full">
+          <Progress.Range borderRadius="full" />
+        </Progress.Track>
       </Progress.Root>
+
+      <HStack justify="space-between" gap={2} fontSize="xs">
+        <Text color="fg.success" truncate>
+          Paid {formatBRL(bill.paid)}
+        </Text>
+        <Text color="fg.warning" flexShrink={0}>
+          Left {formatBRL(open)}
+        </Text>
+      </HStack>
     </Box>
   );
 }
@@ -181,6 +172,7 @@ export default function CategoryDetail({
       borderRadius="xl"
       bg="bg.panel"
       p={4}
+      minW={0}
     >
       <HStack justify="space-between" align="flex-start" gap={3} mb={4}>
         <Stack gap={0.5}>
@@ -339,7 +331,7 @@ export default function CategoryDetail({
           )}
 
           {bills.length > 0 && (
-            <SimpleGrid minChildWidth="240px" gap={3}>
+            <SimpleGrid minChildWidth="200px" gap={2}>
               {bills.map((bill) => (
                 <BillCard
                   key={bill.key}
