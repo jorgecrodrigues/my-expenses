@@ -107,8 +107,7 @@ const issuerTotalValidator = v.object({
   totalSpentCents: v.number(),
 });
 
-export const yearReportValidator = v.object({
-  year: v.number(),
+const periodSummaryFields = {
   statementCount: v.number(),
   totalSpentCents: v.number(),
   refundsCents: v.number(),
@@ -121,13 +120,18 @@ export const yearReportValidator = v.object({
   byIssuer: v.array(issuerTotalValidator),
   byCategory: v.array(v.object({ category: v.string(), ...totalValidator })),
   topMerchants: v.array(v.object({ merchant: v.string(), ...totalValidator })),
-  months: v.array(
-    v.object({
-      month: v.string(),
-      totalSpentCents: v.number(),
-      byIssuer: v.array(issuerTotalValidator),
-    }),
-  ),
+};
+
+export const yearReportValidator = v.object({
+  year: v.number(),
+  ...periodSummaryFields,
+  months: v.array(v.object({ month: v.string(), ...periodSummaryFields })),
+});
+
+/** A statement line along with the issuer of its statement. */
+export const periodTransactionValidator = v.object({
+  ...creditCardTransactionValidator.fields,
+  issuer: creditCardIssuerValidator,
 });
 
 export type CreditCardIssuer = Infer<typeof creditCardIssuerValidator>;

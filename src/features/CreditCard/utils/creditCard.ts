@@ -3,7 +3,11 @@ import {
   CREDIT_CARD_CATEGORIES,
   CREDIT_CARD_ISSUERS,
 } from "../../../../convex/lib/creditCardRules";
-import type { MonthTotal } from "../../../../convex/lib/creditCardReport";
+import { generateColorByString } from "@/shared/utils/color";
+import type {
+  CategoryTotal,
+  IssuerTotal,
+} from "../../../../convex/lib/creditCardReport";
 import type {
   CreditCardIssuer,
   CreditCardStatementStatus,
@@ -29,7 +33,7 @@ export const ISSUER_COLORS: Record<CreditCardIssuer, string> = {
  * reais.
  */
 export function getMonthlyIssuerAmounts(
-  months: MonthTotal[],
+  months: { byIssuer: IssuerTotal[] }[],
 ): Record<string, number>[] {
   return months.map((month) =>
     Object.fromEntries(
@@ -38,14 +42,51 @@ export function getMonthlyIssuerAmounts(
   );
 }
 
+export interface ChartSeries {
+  id: string;
+  label: string;
+  color: string;
+}
+
+/**
+ * Chart series and rows (one per month, in reais) for the given categories.
+ * Series ids are generated because category names may not be safe chart keys;
+ * months where a category is net negative (refunds only) show nothing.
+ */
+export function getMonthlyCategoryChart(
+  months: { byCategory: CategoryTotal[] }[],
+  categories: string[],
+): { series: ChartSeries[]; data: Record<string, number>[] } {
+  const idByCategory = new Map(
+    categories.map((category, index) => [category, `k${index}`]),
+  );
+  return {
+    series: categories.map((category, index) => ({
+      id: `k${index}`,
+      label: categoryLabel(category),
+      color: generateColorByString(category),
+    })),
+    data: months.map((month) => {
+      const row: Record<string, number> = {};
+      for (const item of month.byCategory) {
+        const id = idByCategory.get(item.category);
+        if (id && item.totalCents > 0) row[id] = item.totalCents / 100;
+      }
+      return row;
+    }),
+  };
+}
+
 /**
  * Average and highest month among the months with spending, or null when
  * nothing was spent.
  */
-export function getMonthlyStats(months: MonthTotal[]): {
+export function getMonthlyStats<T extends { totalSpentCents: number }>(
+  months: T[],
+): {
   averageCents: number;
   activeMonths: number;
-  peak: MonthTotal;
+  peak: T;
 } | null {
   const active = months.filter((month) => month.totalSpentCents > 0);
   if (active.length === 0) return null;

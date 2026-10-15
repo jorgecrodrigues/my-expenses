@@ -5,24 +5,45 @@ import {
   formatCents,
   formatDay,
   formatReferenceMonth,
+  getMonthlyCategoryChart,
   getMonthlyIssuerAmounts,
   getMonthlyStats,
   getTotalMismatchCents,
   isStatementInProgress,
   issuerLabel,
 } from "./creditCard";
-import type { MonthTotal } from "../../../../convex/lib/creditCardReport";
+import type { IssuerTotal } from "../../../../convex/lib/creditCardReport";
 
-function month(
-  value: string,
-  byIssuer: MonthTotal["byIssuer"] = [],
-): MonthTotal {
+function month(value: string, byIssuer: IssuerTotal[] = []) {
   return {
     month: value,
     totalSpentCents: byIssuer.reduce((sum, i) => sum + i.totalSpentCents, 0),
     byIssuer,
   };
 }
+
+describe("getMonthlyCategoryChart", () => {
+  it("builds one series per category with safe ids and amounts in reais", () => {
+    const chart = getMonthlyCategoryChart(
+      [
+        {
+          byCategory: [
+            { category: "food & drinks", totalCents: 12345, count: 3 },
+            { category: "transport", totalCents: 500, count: 1 },
+            { category: "travel", totalCents: 9000, count: 1 },
+          ],
+        },
+        { byCategory: [{ category: "transport", totalCents: -200, count: 1 }] },
+      ],
+      ["food & drinks", "transport"],
+    );
+    expect(chart.series.map(({ id, label }) => ({ id, label }))).toEqual([
+      { id: "k0", label: "Food & drinks" },
+      { id: "k1", label: "Transport" },
+    ]);
+    expect(chart.data).toEqual([{ k0: 123.45, k1: 5 }, {}]);
+  });
+});
 
 describe("getMonthlyIssuerAmounts", () => {
   it("maps each issuer to the amount spent in reais", () => {

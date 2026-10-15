@@ -1,0 +1,130 @@
+// @vitest-environment jsdom
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import "@testing-library/jest-dom/vitest";
+import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
+import type { Doc, Id } from "../../../../convex/_generated/dataModel";
+
+type PeriodTransaction = Doc<"creditCardTransactions"> & {
+  issuer: "nubank" | "inter";
+};
+
+const { queryState, useQueryMock } = vi.hoisted(() => ({
+  queryState: { transactions: undefined as PeriodTransaction[] | undefined },
+  useQueryMock: vi.fn(),
+}));
+
+vi.mock("../../../../convex/_generated/api", () => ({
+  api: {
+    creditCardStatements: {
+      listPeriodTransactions: "listPeriodTransactions",
+      listCustomCategories: "listCustomCategories",
+    },
+  },
+}));
+
+vi.mock("convex/react", () => ({
+  useQuery: (fn: string, args: unknown) => {
+    useQueryMock(fn, args);
+    if (fn === "listCustomCategories") return [];
+    return args === "skip" ? undefined : queryState.transactions;
+  },
+}));
+
+vi.mock("./TransactionCategorySelect", () => ({
+  default: ({ category }: { category: string }) => <span>{category}</span>,
+}));
+
+import PeriodTransactionsTable from "./PeriodTransactionsTable";
+
+function transaction(index: number, overrides: Partial<PeriodTransaction> = {}): PeriodTransaction {
+  return {
+    _id: `transaction${index}` as Id<"creditCardTransactions">,
+    _creationTime: 0,
+    userId: "user1" as Id<"users">,
+    statementId: "statement1" as Id<"creditCardStatements">,
+    issuer: "nubank",
+    date: "2026-03-05",
+    description: `Purchase ${index}`,
+    amountCents: 1000,
+    category: "food",
+    type: "purchase",
+    ...overrides,
+  };
+}
+
+function renderTable(props: { monthIndex?: number; category?: string } = {}) {
+  render(
+    <ChakraProvider value={defaultSystem}>
+      <PeriodTransactionsTable year={2026} periodLabel="Mar 2026 · Food" {...props} />
+    </ChakraProvider>,
+  );
+}
+
+beforeEach(() => {
+  queryState.transactions = undefined;
+});
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
+
+describe("PeriodTransactionsTable", () => {
+  it("asks for a selection instead of loading the whole year", () => {
+    renderTable();
+    expect(useQueryMock).toHaveBeenCalledWith("listPeriodTransactions", "skip");
+    expect(
+      screen.getByText(/click a month in the chart or a category/i),
+    ).toBeInTheDocument();
+  });
+
+  it("loads the lines of the selected month and category", () => {
+    renderTable({ monthIndex: 2, category: "food" });
+    expect(useQueryMock).toHaveBeenCalledWith("listPeriodTransactions", {
+      year: 2026,
+      month: 3,
+      category: "food",
+    });
+  });
+
+  it("lists the lines with their card and category", () => {
+    queryState.transactions = [
+      transaction(1, { merchant: "iFood", description: "IFOOD *A", issuer: "inter" }),
+      transaction(2, {
+        description: "Estorno",
+        amountCents: -500,
+        type: "refund",
+        installmentCurrent: 2,
+        installmentTotal: 5,
+      }),
+    ];
+    renderTable({ monthIndex: 2 });
+
+    expect(screen.getByText("Mar 2026 · Food · 2 lines")).toBeInTheDocument();
+    expect(screen.getByText("iFood")).toBeInTheDocument();
+    expect(screen.getByText("IFOOD *A")).toBeInTheDocument();
+    expect(screen.getByText("Inter")).toBeInTheDocument();
+    expect(screen.getByText("Installment 2/5")).toBeInTheDocument();
+    expect(screen.getAllByText("food")).toHaveLength(2);
+    expect(screen.getAllByText("05/03/2026")).toHaveLength(2);
+  });
+
+  it("shows an empty state", () => {
+    queryState.transactions = [];
+    renderTable({ category: "food" });
+    expect(screen.getByText("No transactions in this period.")).toBeInTheDocument();
+  });
+
+  it("reveals more lines on demand", () => {
+    queryState.transactions = Array.from({ length: 60 }, (_, i) => transaction(i));
+    renderTable({ monthIndex: 2 });
+
+    expect(screen.getByText("Purchase 49")).toBeInTheDocument();
+    expect(screen.queryByText("Purchase 50")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show more (10 left)" }));
+    expect(screen.getByText("Purchase 59")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /show more/i })).not.toBeInTheDocument();
+  });
+});

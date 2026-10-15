@@ -116,16 +116,31 @@ describe("buildYearReport", () => {
 
   it("splits the spending by month and issuer", () => {
     expect(report.months).toHaveLength(12);
-    expect(report.months[0]).toEqual({
+    expect(report.months[0]).toMatchObject({
       month: "2026-01",
+      statementCount: 2,
       totalSpentCents: 5550,
+      iofCents: 50,
       byIssuer: [
         { issuer: "nubank", totalSpentCents: 4000 },
         { issuer: "inter", totalSpentCents: 1550 },
       ],
     });
-    expect(report.months[1]).toEqual({ month: "2026-02", totalSpentCents: 0, byIssuer: [] });
+    expect(report.months[1]).toMatchObject({
+      month: "2026-02",
+      statementCount: 0,
+      totalSpentCents: 0,
+      byIssuer: [],
+      byCategory: [],
+      topMerchants: [],
+    });
     expect(report.months[2].totalSpentCents).toBe(9000);
+    expect(report.months[2].refundsCents).toBe(1000);
+    expect(report.months[2].topMerchants[0]).toEqual({
+      merchant: "iFood",
+      totalCents: 6000,
+      count: 1,
+    });
     expect(report.months[11].month).toBe("2026-12");
     expect(report.byIssuer).toEqual([
       { issuer: "nubank", totalSpentCents: 13000 },
@@ -136,6 +151,33 @@ describe("buildYearReport", () => {
   it("merges categories and merchants across statements", () => {
     expect(report.byCategory[0]).toEqual({ category: "food", totalCents: 9000, count: 3 });
     expect(report.topMerchants[0]).toEqual({ merchant: "iFood", totalCents: 10000, count: 2 });
+  });
+
+  it("restricts every figure but the category breakdown to the category filter", () => {
+    const food = buildYearReport(
+      2026,
+      [
+        { issuer: "nubank", referenceMonth: "2026-01", transactions: january },
+        { issuer: "inter", referenceMonth: "2026-01", transactions: interJanuary },
+        { issuer: "nubank", referenceMonth: "2026-03", transactions: march },
+      ],
+      "food",
+    );
+    expect(food.totalSpentCents).toBe(10000);
+    expect(food.refundsCents).toBe(1000);
+    expect(food.iofCents).toBe(0);
+    expect(food.statementCount).toBe(3);
+    expect(food.topMerchants).toEqual([{ merchant: "iFood", totalCents: 10000, count: 2 }]);
+    expect(food.byIssuer).toEqual([
+      { issuer: "nubank", totalSpentCents: 10000 },
+      { issuer: "inter", totalSpentCents: 0 },
+    ]);
+    expect(food.byCategory.map((c) => c.category)).toEqual(
+      report.byCategory.map((c) => c.category),
+    );
+    expect(food.months[0].totalSpentCents).toBe(4000);
+    expect(food.months[0].byCategory).toEqual(report.months[0].byCategory);
+    expect(food.months[2].totalSpentCents).toBe(6000);
   });
 
   it("returns twelve empty months when there are no statements", () => {
@@ -157,6 +199,17 @@ describe("referenceMonthRange", () => {
     expect(() => referenceMonthRange(2026.5)).toThrow("Invalid year");
     expect(() => referenceMonthRange(1999)).toThrow("Invalid year");
     expect(() => referenceMonthRange(2101)).toThrow("Invalid year");
+  });
+
+  it("narrows the range to a single month", () => {
+    expect(referenceMonthRange(2026, 3)).toEqual({ start: "2026-03", end: "2026-03" });
+    expect(referenceMonthRange(2026, 12)).toEqual({ start: "2026-12", end: "2026-12" });
+  });
+
+  it("rejects invalid months", () => {
+    expect(() => referenceMonthRange(2026, 0)).toThrow("Invalid month");
+    expect(() => referenceMonthRange(2026, 13)).toThrow("Invalid month");
+    expect(() => referenceMonthRange(2026, 1.5)).toThrow("Invalid month");
   });
 });
 
