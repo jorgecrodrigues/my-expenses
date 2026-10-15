@@ -1,6 +1,7 @@
 import { Heading, Text, VStack } from "@chakra-ui/react";
 import StatementUploader from "../components/StatementUploader";
 import StatementsList from "../components/StatementsList";
+import YearDashboard from "../components/YearDashboard";
 
 export default function CreditCardPage() {
   return (
@@ -12,6 +13,7 @@ export default function CreditCardPage() {
           report generated with Gemini.
         </Text>
       </VStack>
+      <YearDashboard />
       <StatementUploader />
       <StatementsList />
     </VStack>

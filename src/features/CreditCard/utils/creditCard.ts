@@ -3,6 +3,7 @@ import {
   CREDIT_CARD_CATEGORIES,
   CREDIT_CARD_ISSUERS,
 } from "../../../../convex/lib/creditCardRules";
+import type { MonthTotal } from "../../../../convex/lib/creditCardReport";
 import type {
   CreditCardIssuer,
   CreditCardStatementStatus,
@@ -16,6 +17,47 @@ export const formatCents = (cents: number, compact = false): string =>
 
 export function issuerLabel(issuer: CreditCardIssuer): string {
   return CREDIT_CARD_ISSUERS.find((i) => i.value === issuer)?.label ?? issuer;
+}
+
+export const ISSUER_COLORS: Record<CreditCardIssuer, string> = {
+  nubank: "purple.solid",
+  inter: "orange.solid",
+};
+
+/**
+ * Chart rows (one per month) mapping each issuer to the amount spent, in
+ * reais.
+ */
+export function getMonthlyIssuerAmounts(
+  months: MonthTotal[],
+): Record<string, number>[] {
+  return months.map((month) =>
+    Object.fromEntries(
+      month.byIssuer.map((item) => [item.issuer, item.totalSpentCents / 100]),
+    ),
+  );
+}
+
+/**
+ * Average and highest month among the months with spending, or null when
+ * nothing was spent.
+ */
+export function getMonthlyStats(months: MonthTotal[]): {
+  averageCents: number;
+  activeMonths: number;
+  peak: MonthTotal;
+} | null {
+  const active = months.filter((month) => month.totalSpentCents > 0);
+  if (active.length === 0) return null;
+  const total = active.reduce((sum, month) => sum + month.totalSpentCents, 0);
+  const peak = active.reduce((max, month) =>
+    month.totalSpentCents > max.totalSpentCents ? month : max,
+  );
+  return {
+    averageCents: Math.round(total / active.length),
+    activeMonths: active.length,
+    peak,
+  };
 }
 
 export function categoryLabel(category: string): string {

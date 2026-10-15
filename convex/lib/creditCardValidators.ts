@@ -102,6 +102,34 @@ export const statementReportValidator = v.object({
   ),
 });
 
+const issuerTotalValidator = v.object({
+  issuer: creditCardIssuerValidator,
+  totalSpentCents: v.number(),
+});
+
+export const yearReportValidator = v.object({
+  year: v.number(),
+  statementCount: v.number(),
+  totalSpentCents: v.number(),
+  refundsCents: v.number(),
+  netCents: v.number(),
+  transactionCount: v.number(),
+  internationalCents: v.number(),
+  iofCents: v.number(),
+  feesCents: v.number(),
+  interestCents: v.number(),
+  byIssuer: v.array(issuerTotalValidator),
+  byCategory: v.array(v.object({ category: v.string(), ...totalValidator })),
+  topMerchants: v.array(v.object({ merchant: v.string(), ...totalValidator })),
+  months: v.array(
+    v.object({
+      month: v.string(),
+      totalSpentCents: v.number(),
+      byIssuer: v.array(issuerTotalValidator),
+    }),
+  ),
+});
+
 export type CreditCardIssuer = Infer<typeof creditCardIssuerValidator>;
 export type CreditCardStatementStatus = Infer<
   typeof creditCardStatementStatusValidator

@@ -3,7 +3,13 @@ import { Box, SimpleGrid, Stat } from "@chakra-ui/react";
 import type { StatementReport } from "../../../../convex/lib/creditCardReport";
 import { formatCents } from "../utils/creditCard";
 
-function ReportCard({ label, children }: { label: string; children: ReactNode }) {
+export function ReportCard({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
   return (
     <Box
       borderWidth="1px"

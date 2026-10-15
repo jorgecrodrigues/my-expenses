@@ -5,10 +5,55 @@ import {
   formatCents,
   formatDay,
   formatReferenceMonth,
+  getMonthlyIssuerAmounts,
+  getMonthlyStats,
   getTotalMismatchCents,
   isStatementInProgress,
   issuerLabel,
 } from "./creditCard";
+import type { MonthTotal } from "../../../../convex/lib/creditCardReport";
+
+function month(
+  value: string,
+  byIssuer: MonthTotal["byIssuer"] = [],
+): MonthTotal {
+  return {
+    month: value,
+    totalSpentCents: byIssuer.reduce((sum, i) => sum + i.totalSpentCents, 0),
+    byIssuer,
+  };
+}
+
+describe("getMonthlyIssuerAmounts", () => {
+  it("maps each issuer to the amount spent in reais", () => {
+    expect(
+      getMonthlyIssuerAmounts([
+        month("2026-01", [
+          { issuer: "nubank", totalSpentCents: 150050 },
+          { issuer: "inter", totalSpentCents: 2000 },
+        ]),
+        month("2026-02"),
+      ]),
+    ).toEqual([{ nubank: 1500.5, inter: 20 }, {}]);
+  });
+});
+
+describe("getMonthlyStats", () => {
+  it("averages only the months with spending and finds the peak", () => {
+    const stats = getMonthlyStats([
+      month("2026-01", [{ issuer: "nubank", totalSpentCents: 1000 }]),
+      month("2026-02"),
+      month("2026-03", [{ issuer: "inter", totalSpentCents: 4001 }]),
+    ]);
+    expect(stats?.averageCents).toBe(2501);
+    expect(stats?.activeMonths).toBe(2);
+    expect(stats?.peak.month).toBe("2026-03");
+  });
+
+  it("returns null when nothing was spent", () => {
+    expect(getMonthlyStats([month("2026-01"), month("2026-02")])).toBeNull();
+  });
+});
 
 const normalizeSpaces = (value: string) => value.replace(/\s/g, " ");
 

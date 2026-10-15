@@ -18,6 +18,7 @@ import {
   creditCardTransactionExtractedFields,
   creditCardTransactionValidator,
   statementReportValidator,
+  yearReportValidator,
 } from "./lib/creditCardValidators";
 import {
   isStatementContentType,
@@ -25,7 +26,13 @@ import {
   resolveCategoryName,
 } from "./lib/creditCardRules";
 import { sumStatementCents } from "./lib/creditCardExtraction";
-import { buildStatementReport } from "./lib/creditCardReport";
+import {
+  buildStatementReport,
+  buildYearReport,
+  referenceMonthRange,
+  referenceMonthYears,
+  type YearStatement,
+} from "./lib/creditCardReport";
 
 async function getOwnedStatement(
   ctx: QueryCtx,
@@ -194,6 +201,68 @@ export const getStatementReport = query({
     }
     const transactions = await getStatementTransactions(ctx, statement._id);
     return { statement, report: buildStatementReport(transactions) };
+  },
+});
+
+async function getYearStatements(
+  ctx: QueryCtx,
+  userId: Id<"users">,
+  year: number,
+): Promise<YearStatement[]> {
+  const { start, end } = referenceMonthRange(year);
+  const statements = await ctx.db
+    .query("creditCardStatements")
+    .withIndex("by_userId_and_referenceMonth", (q) =>
+      q
+        .eq("userId", userId)
+        .gte("referenceMonth", start)
+        .lte("referenceMonth", end),
+    )
+    .collect();
+  return await Promise.all(
+    statements
+      .filter((statement) => statement.status === "completed")
+      .map(async (statement) => ({
+        issuer: statement.issuer,
+        referenceMonth: statement.referenceMonth ?? start,
+        transactions: await getStatementTransactions(ctx, statement._id),
+      })),
+  );
+}
+
+/**
+ * Lists the years that have at least one processed statement, newest first.
+ */
+export const listStatementYears = query({
+  args: {},
+  returns: v.array(v.number()),
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
+    const statements = await ctx.db
+      .query("creditCardStatements")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+    return referenceMonthYears(
+      statements
+        .filter((statement) => statement.status === "completed")
+        .map((statement) => statement.referenceMonth),
+    );
+  },
+});
+
+/**
+ * Aggregates the caller's processed statements of one year, by the month
+ * each statement refers to.
+ *
+ * @param year - The calendar year, e.g. 2026.
+ */
+export const getYearReport = query({
+  args: { year: v.number() },
+  returns: yearReportValidator,
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const statements = await getYearStatements(ctx, userId, args.year);
+    return buildYearReport(args.year, statements);
   },
 });
 
