@@ -160,6 +160,147 @@ export function buildStatementReport(
   };
 }
 
+export interface IssuerTotal {
+  issuer: CreditCardIssuer;
+  totalSpentCents: number;
+}
+
+export interface MonthTotal {
+  /** "YYYY-MM" */
+  month: string;
+  totalSpentCents: number;
+  byIssuer: IssuerTotal[];
+}
+
+export interface YearReport {
+  year: number;
+  statementCount: number;
+  totalSpentCents: number;
+  refundsCents: number;
+  netCents: number;
+  transactionCount: number;
+  internationalCents: number;
+  iofCents: number;
+  feesCents: number;
+  interestCents: number;
+  byIssuer: IssuerTotal[];
+  byCategory: CategoryTotal[];
+  topMerchants: MerchantTotal[];
+  /** Always 12 entries, January to December. */
+  months: MonthTotal[];
+}
+
+export interface YearStatement {
+  issuer: CreditCardIssuer;
+  /** "YYYY-MM" */
+  referenceMonth: string;
+  transactions: ReportTransaction[];
+}
+
+const MIN_REPORT_YEAR = 2000;
+const MAX_REPORT_YEAR = 2100;
+
+/**
+ * Bounds of the reference months of a year, for an index range query.
+ *
+ * @throws When the year is not a plausible calendar year.
+ */
+export function referenceMonthRange(year: number): {
+  start: string;
+  end: string;
+} {
+  if (
+    !Number.isInteger(year) ||
+    year < MIN_REPORT_YEAR ||
+    year > MAX_REPORT_YEAR
+  ) {
+    throw new Error(
+      `Invalid year. Use a year between ${MIN_REPORT_YEAR} and ${MAX_REPORT_YEAR}`,
+    );
+  }
+  return { start: `${year}-01`, end: `${year}-12` };
+}
+
+/** Years of the given reference months, newest first, without duplicates. */
+export function referenceMonthYears(
+  referenceMonths: (string | undefined)[],
+): number[] {
+  const years = new Set<number>();
+  for (const referenceMonth of referenceMonths) {
+    const match = referenceMonth ? /^(\d{4})-\d{2}$/.exec(referenceMonth) : null;
+    if (match) {
+      years.add(Number(match[1]));
+    }
+  }
+  return [...years].sort((a, b) => b - a);
+}
+
+function issuerTotals(
+  statements: { issuer: CreditCardIssuer; totalSpentCents: number }[],
+): IssuerTotal[] {
+  const totals = new Map<CreditCardIssuer, number>();
+  for (const statement of statements) {
+    totals.set(
+      statement.issuer,
+      (totals.get(statement.issuer) ?? 0) + statement.totalSpentCents,
+    );
+  }
+  return [...totals.entries()]
+    .map(([issuer, totalSpentCents]) => ({ issuer, totalSpentCents }))
+    .sort((a, b) => b.totalSpentCents - a.totalSpentCents);
+}
+
+/**
+ * Aggregates the statements of one year. Statements are placed in the month
+ * they refer to, so a purchase made in December but billed in January counts
+ * for January. Installment details are left out: summing them across
+ * statements would count the same purchase once per month.
+ */
+export function buildYearReport(
+  year: number,
+  statements: YearStatement[],
+): YearReport {
+  const overall = buildStatementReport(
+    statements.flatMap((statement) => statement.transactions),
+  );
+  const spentByStatement = statements.map((statement) => ({
+    issuer: statement.issuer,
+    referenceMonth: statement.referenceMonth,
+    totalSpentCents: sumBy(statement.transactions, (t) =>
+      SPENDING_TYPES.includes(t.type),
+    ),
+  }));
+
+  const months = Array.from({ length: 12 }, (_, index) => {
+    const month = `${year}-${String(index + 1).padStart(2, "0")}`;
+    const byIssuer = issuerTotals(
+      spentByStatement.filter((statement) => statement.referenceMonth === month),
+    );
+    return {
+      month,
+      totalSpentCents: byIssuer.reduce((sum, i) => sum + i.totalSpentCents, 0),
+      byIssuer,
+    };
+  });
+
+  return {
+    year,
+    statementCount: statements.length,
+    totalSpentCents: overall.totalSpentCents,
+    refundsCents: overall.refundsCents,
+    netCents: overall.netCents,
+    transactionCount: overall.transactionCount,
+    internationalCents: overall.internationalCents,
+    iofCents: overall.iofCents,
+    feesCents: overall.feesCents,
+    interestCents: overall.interestCents,
+    byIssuer: issuerTotals(spentByStatement),
+    byCategory: overall.byCategory,
+    topMerchants: overall.topMerchants,
+    months,
+  };
+}
+
 const brl = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",

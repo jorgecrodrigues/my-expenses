@@ -18,6 +18,10 @@ vi.mock("../components/StatementsList", () => ({
   default: () => <div>StatementsList</div>,
 }));
 
+vi.mock("../components/YearDashboard", () => ({
+  default: () => <div>YearDashboard</div>,
+}));
+
 import CreditCardPage from "./CreditCardPage";
 
 afterEach(() => {
@@ -25,12 +29,13 @@ afterEach(() => {
 });
 
 describe("CreditCardPage", () => {
-  it("renders the heading, the uploader and the statements list", () => {
+  it("renders the heading, the yearly dashboard, the uploader and the statements list", () => {
     render(<CreditCardPage />);
     expect(
       screen.getByRole("heading", { name: "Credit Card" }),
     ).toBeInTheDocument();
     expect(screen.getByText(/nubank or inter statement pdf/i)).toBeInTheDocument();
+    expect(screen.getByText("YearDashboard")).toBeInTheDocument();
     expect(screen.getByText("StatementUploader")).toBeInTheDocument();
     expect(screen.getByText("StatementsList")).toBeInTheDocument();
   });
