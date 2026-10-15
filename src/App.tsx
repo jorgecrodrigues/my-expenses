@@ -53,7 +53,7 @@ export default function App() {
                     component={DashboardPage}
                   />
                   <Route path="/expenses" component={ExpensePage} />
-                  <Route path="/bank-accounts" component={BankAccountPage} />
+                  {/* <Route path="/bank-accounts" component={BankAccountPage} /> */}
                   <Route path="/credit-card" component={CreditCardPage} />
                   <Route
                     path="/credit-card/statements/:statementId"

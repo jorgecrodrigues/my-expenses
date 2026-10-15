@@ -48,12 +48,12 @@ const NAV_ITEMS: NavItem[] = [
     icon: IconReceipt,
     isActive: (pathname) => pathname.includes("/expenses"),
   },
-  {
-    path: "/bank-accounts",
-    label: "Bank Accounts",
-    icon: IconBuildingBank,
-    isActive: (pathname) => pathname.includes("/bank-accounts"),
-  },
+  // {
+  //   path: "/bank-accounts",
+  //   label: "Bank Accounts",
+  //   icon: IconBuildingBank,
+  //   isActive: (pathname) => pathname.includes("/bank-accounts"),
+  // },
   {
     path: "/credit-card",
     label: "Credit Card",
