@@ -23,6 +23,7 @@
     "@convex-dev/auth": "^0.0.96",
     "@emotion/react": "^11.14.0",
     "@faker-js/faker": "^10.6.0",
+    "@google/genai": "^2.29.1",
     "@internationalized/date": "^3.12.4",
     "@tabler/icons-react": "^3.49.0",
     "@vercel/speed-insights": "^2.0.0",

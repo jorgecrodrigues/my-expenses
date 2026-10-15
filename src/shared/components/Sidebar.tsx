@@ -10,8 +10,9 @@ import {
 import { useLocation } from "wouter";
 import type { IconProps } from "@tabler/icons-react";
 import {
-  IconBuildingBank,
+  // IconBuildingBank,
   IconChevronRight,
+  IconCreditCard,
   IconDashboard,
   IconHome,
   IconInfoCircle,
@@ -47,11 +48,17 @@ const NAV_ITEMS: NavItem[] = [
     icon: IconReceipt,
     isActive: (pathname) => pathname.includes("/expenses"),
   },
+  // {
+  //   path: "/bank-accounts",
+  //   label: "Bank Accounts",
+  //   icon: IconBuildingBank,
+  //   isActive: (pathname) => pathname.includes("/bank-accounts"),
+  // },
   {
-    path: "/bank-accounts",
-    label: "Bank Accounts",
-    icon: IconBuildingBank,
-    isActive: (pathname) => pathname.includes("/bank-accounts"),
+    path: "/credit-card",
+    label: "Credit Card",
+    icon: IconCreditCard,
+    isActive: (pathname) => pathname.includes("/credit-card"),
   },
   {
     path: "/about",

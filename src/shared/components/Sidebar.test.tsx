@@ -15,6 +15,7 @@ vi.mock("wouter", () => ({
 vi.mock("@tabler/icons-react", () => ({
   IconBuildingBank: () => <span data-icon="bank" />,
   IconChevronRight: () => <span data-icon="chevron" />,
+  IconCreditCard: () => <span data-icon="credit-card" />,
   IconDashboard: () => <span data-icon="dashboard" />,
   IconHome: () => <span data-icon="home" />,
   IconInfoCircle: () => <span data-icon="info" />,
@@ -60,9 +61,16 @@ describe("Sidebar", () => {
     expect(screen.getByRole("button", { name: /dashboard/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /expenses/i })).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /bank accounts/i }),
+      screen.getByRole("button", { name: /credit card/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /about/i })).toBeInTheDocument();
+  });
+
+  it("hides the disabled Bank Accounts item", () => {
+    renderWithChakra(<Sidebar />);
+    expect(
+      screen.queryByRole("button", { name: /bank accounts/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not show the Menu heading when collapsed", () => {
@@ -92,11 +100,20 @@ describe("Sidebar", () => {
     );
   });
 
+  it("treats statement report paths as active for Credit Card", () => {
+    mockLocation = "/credit-card/statements/abc123";
+    renderWithChakra(<Sidebar />);
+    expect(screen.getByRole("button", { name: /credit card/i })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
   it.each([
     ["Home", "/"],
     ["Dashboard", "/dashboard"],
     ["Expenses", "/expenses"],
-    ["Bank Accounts", "/bank-accounts"],
+    ["Credit Card", "/credit-card"],
     ["About", "/about"],
   ])("calls navigate with %s when the item is clicked", async (label, path) => {
     const user = userEvent.setup();

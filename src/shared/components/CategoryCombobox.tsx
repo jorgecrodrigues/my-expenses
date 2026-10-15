@@ -19,35 +19,52 @@ interface CategoryComboboxProps {
   initialItems?: { value: string; label: string }[];
   selectedItem?: string;
   inputProps?: Combobox.InputProps;
+  /** Pass null to hide the label (then give the input an aria-label). */
+  label?: string | null;
+  /** Pass null to hide the helper text. */
+  helperText?: string | null;
+  size?: Combobox.RootProps["size"];
+  disabled?: boolean;
+  clearable?: boolean;
   /** Called when the user commits a newly typed category (not from initial items). */
   onCreateItem?: (item: CategoryComboboxItem) => void;
+  /** Called with the chosen value, whether it is an existing or a new category. */
+  onSelect?: (value: string) => void;
 }
 
 export default function CategoryCombobox({
   initialItems = [],
   selectedItem,
   inputProps,
+  label = "Category",
+  helperText = "Please select the expense category.",
+  size,
+  disabled,
+  clearable = true,
   onCreateItem,
+  onSelect,
 }: CategoryComboboxProps) {
   const { combobox } = useCreatableCombobox({
     initialItems,
     selectedItem,
     createOptionMode: "prepend",
     onCreateItem,
+    onSelect,
+    disabled,
   });
 
   return (
     <Field.Root>
-      <Field.Label>Category</Field.Label>
-      <Combobox.RootProvider value={combobox}>
+      {label !== null && <Field.Label>{label}</Field.Label>}
+      <Combobox.RootProvider value={combobox} size={size}>
         <Combobox.Control>
           <Combobox.Input {...inputProps} />
           <Combobox.IndicatorGroup>
-            <Combobox.ClearTrigger />
+            {clearable && <Combobox.ClearTrigger />}
             <Combobox.Trigger />
           </Combobox.IndicatorGroup>
         </Combobox.Control>
-        <Field.HelperText>Please select the expense category.</Field.HelperText>
+        {helperText !== null && <Field.HelperText>{helperText}</Field.HelperText>}
         <Field.ErrorText />
 
         <Portal>
@@ -80,6 +97,8 @@ interface UseCreatableComboboxProps {
   initialItems: Item[];
   selectedItem?: string;
   onCreateItem?: (item: Item) => void;
+  onSelect?: (value: string) => void;
+  disabled?: boolean;
   createOptionMode: CreateOptionMode;
 }
 
@@ -106,7 +125,14 @@ const updateItems = (v: Item[], i: Item, mode: CreateOptionMode) => {
 };
 
 function useCreatableCombobox(props: UseCreatableComboboxProps) {
-  const { initialItems, selectedItem, onCreateItem, createOptionMode } = props;
+  const {
+    initialItems,
+    selectedItem,
+    onCreateItem,
+    onSelect,
+    disabled,
+    createOptionMode,
+  } = props;
 
   const [items, setItems] = React.useState<Item[]>(initialItems);
   const itemsRef = React.useRef<Item[]>(initialItems);
@@ -166,6 +192,7 @@ function useCreatableCombobox(props: UseCreatableComboboxProps) {
 
   const combobox = useCombobox({
     collection,
+    disabled,
     allowCustomValue: true,
     onInputValueChange: (details: Combobox.InputValueChangeDetails) => {
       const { inputValue, reason } = details;
@@ -196,6 +223,9 @@ function useCreatableCombobox(props: UseCreatableComboboxProps) {
       setSelectedValue(next);
       if (value.includes(NEW_ITEM_VALUE_PREFIX)) {
         selectNewItem(inputValue);
+      }
+      if (next[0]) {
+        onSelect?.(next[0]);
       }
     },
   });
