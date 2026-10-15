@@ -1,6 +1,10 @@
 import { defineSchema, defineTable } from "convex/server";
 import { authTables } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import {
+  creditCardStatementFields,
+  creditCardTransactionFields,
+} from "./lib/creditCardValidators";
 
 /**
  * The Convex schema for the application.
@@ -82,4 +86,23 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_bankAccountId", ["bankAccountId"]),
+  creditCardStatements: defineTable(creditCardStatementFields)
+    .index("by_userId", ["userId"])
+    .index("by_userId_and_issuer_and_referenceMonth", [
+      "userId",
+      "issuer",
+      "referenceMonth",
+    ]),
+  creditCardTransactions: defineTable(creditCardTransactionFields)
+    .index("by_statementId_and_date", ["statementId", "date"])
+    .index("by_statementId_and_category_and_date", [
+      "statementId",
+      "category",
+      "date",
+    ])
+    .index("by_userId_and_date", ["userId", "date"]),
+  creditCardCategories: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+  }).index("by_userId", ["userId"]),
 });

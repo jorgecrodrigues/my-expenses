@@ -10,7 +10,11 @@ import Logo from "@/shared/components/Logo";
 const HomePage = lazy(() => import("@/features/Home/pages/HomePage"));
 const DashboardPage = lazy(() => import("@/features/Dashboard/pages/DashboardPage"));
 const ExpensePage = lazy(() => import("@/features/Expense/pages/ExpensePage"));
-const BankAccountPage = lazy(() => import("@/features/BankAccount/pages/BankAccountPage"));
+// const BankAccountPage = lazy(() => import("@/features/BankAccount/pages/BankAccountPage"));
+const CreditCardPage = lazy(() => import("@/features/CreditCard/pages/CreditCardPage"));
+const StatementReportPage = lazy(
+  () => import("@/features/CreditCard/pages/StatementReportPage"),
+);
 const AboutPage = lazy(() => import("@/features/About/pages/AboutPage"));
 const SignIn = lazy(() => import("@/features/Auth/pages/SignIn"));
 
@@ -49,7 +53,12 @@ export default function App() {
                     component={DashboardPage}
                   />
                   <Route path="/expenses" component={ExpensePage} />
-                  <Route path="/bank-accounts" component={BankAccountPage} />
+                  {/* <Route path="/bank-accounts" component={BankAccountPage} /> */}
+                  <Route path="/credit-card" component={CreditCardPage} />
+                  <Route
+                    path="/credit-card/statements/:statementId"
+                    component={StatementReportPage}
+                  />
                   <Route path="/about" component={AboutPage} />
                   <Route>
                     <h2>404 - Page Not Found</h2>

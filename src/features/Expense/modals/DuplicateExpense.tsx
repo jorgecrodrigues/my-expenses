@@ -17,7 +17,7 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc } from "../../../../convex/_generated/dataModel";
-import CategoryCombobox from "../components/CategoryCombobox";
+import CategoryCombobox from "@/shared/components/CategoryCombobox";
 import RecurrenceFields from "../components/RecurrenceFields";
 import BRLCurrencyInput from "@/shared/components/BRLCurrencyInput";
 import { toaster } from "@/components/ui/toaster";

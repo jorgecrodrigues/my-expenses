@@ -319,6 +319,73 @@ describe("CategoryCombobox", () => {
     expect(screen.getByRole("combobox")).toHaveValue("Food");
   });
 
+  it("hides the label, helper text and clear control when asked", () => {
+    renderWithChakra(
+      <CategoryCombobox
+        initialItems={[{ value: "food", label: "Food" }]}
+        label={null}
+        helperText={null}
+        clearable={false}
+        inputProps={{ "aria-label": "Category of Oxxo" }}
+      />,
+    );
+
+    expect(screen.queryByText("Category")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Please select the expense category."),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: "Category of Oxxo" }),
+    ).toBeInTheDocument();
+    const control = screen.getByRole("combobox").closest(
+      '[data-part="control"]',
+    ) as HTMLElement;
+    const buttons = within(control).getAllByRole("button", { hidden: true });
+    expect(
+      buttons.some((b) =>
+        (b.getAttribute("aria-label") ?? "").toLowerCase().includes("clear"),
+      ),
+    ).toBe(false);
+  });
+
+  it("calls onSelect with an existing option", async () => {
+    const onSelect = vi.fn();
+    const user = userEvent.setup();
+    renderWithChakra(
+      <CategoryCombobox
+        initialItems={[
+          { value: "food", label: "Food" },
+          { value: "travel", label: "Travel" },
+        ]}
+        onSelect={onSelect}
+        inputProps={{ placeholder: "Enter category" }}
+      />,
+    );
+
+    await openCombobox(user);
+    await user.click(await screen.findByRole("option", { name: "Travel" }));
+
+    await waitFor(() => expect(onSelect).toHaveBeenCalledWith("travel"));
+  });
+
+  it("calls onSelect with a newly typed category", async () => {
+    const onSelect = vi.fn();
+    const user = userEvent.setup();
+    renderWithChakra(
+      <CategoryCombobox
+        initialItems={[{ value: "food", label: "Food" }]}
+        onSelect={onSelect}
+        inputProps={{ placeholder: "Enter category" }}
+      />,
+    );
+
+    await user.click(screen.getByRole("combobox"));
+    await user.keyboard("Pets");
+    await user.click(await screen.findByRole("option", { name: "Pets" }));
+
+    await waitFor(() => expect(onSelect).toHaveBeenCalledWith("Pets"));
+  });
+
   it("renders clear and trigger controls next to the input", () => {
     renderWithChakra(
       <CategoryCombobox

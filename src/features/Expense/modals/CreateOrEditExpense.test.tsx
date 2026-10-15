@@ -61,7 +61,7 @@ vi.mock("@/shared/components/BRLCurrencyInput", () => ({
   ),
 }));
 
-vi.mock("../components/CategoryCombobox", () => ({
+vi.mock("@/shared/components/CategoryCombobox", () => ({
   default: () => <div data-testid="category-combobox" />,
 }));
 

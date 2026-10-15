@@ -40,7 +40,7 @@ vi.mock("@/shared/animation/chakraMotion", () => ({
   dialogContentMotion: {},
 }));
 
-vi.mock("../components/CategoryCombobox", () => ({
+vi.mock("@/shared/components/CategoryCombobox", () => ({
   default: ({
     selectedItem,
     inputProps,
