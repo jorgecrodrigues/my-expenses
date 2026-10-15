@@ -2,6 +2,7 @@ import React from "react";
 import { Chart, useChart } from "@chakra-ui/charts";
 import {
   Box,
+  Button,
   ColorSwatch,
   HStack,
   Progress,
@@ -14,20 +15,31 @@ import type { CategoryTotal } from "../../../../convex/lib/creditCardReport";
 import { categoryLabel, formatCents } from "../utils/creditCard";
 
 type Slice = {
+  category: string;
   name: string;
   value: number;
   color: string;
   fill: string;
+  fillOpacity: number;
   count: number;
 };
+
+interface StatementCategoryChartProps {
+  categories: CategoryTotal[];
+  emptyMessage?: string;
+  subtitle?: string;
+  selectedCategory?: string;
+  /** Makes categories clickable; called with undefined to clear. */
+  onSelectCategory?: (category?: string) => void;
+}
 
 export default function StatementCategoryChart({
   categories,
   emptyMessage = "No spending in this statement.",
-}: {
-  categories: CategoryTotal[];
-  emptyMessage?: string;
-}) {
+  subtitle,
+  selectedCategory,
+  onSelectCategory,
+}: StatementCategoryChartProps) {
   const slices: Slice[] = React.useMemo(
     () =>
       categories
@@ -35,17 +47,25 @@ export default function StatementCategoryChart({
         .map((category) => {
           const color = generateColorByString(category.category);
           return {
+            category: category.category,
             name: categoryLabel(category.category),
             value: category.totalCents,
             color,
             fill: color,
+            fillOpacity:
+              selectedCategory && selectedCategory !== category.category
+                ? 0.3
+                : 1,
             count: category.count,
           };
         }),
-    [categories],
+    [categories, selectedCategory],
   );
   const total = slices.reduce((sum, slice) => sum + slice.value, 0);
   const chart = useChart<Slice>({ data: slices });
+
+  const toggleCategory = (category: string) =>
+    onSelectCategory?.(category === selectedCategory ? undefined : category);
 
   return (
     <Box
@@ -56,9 +76,27 @@ export default function StatementCategoryChart({
       p={4}
       h="full"
     >
-      <Text fontSize="lg" fontWeight="bold" mb={4}>
-        Spending by category
-      </Text>
+      <HStack justify="space-between" align="flex-start" mb={4} gap={3}>
+        <Stack gap={0.5}>
+          <Text fontSize="lg" fontWeight="bold">
+            Spending by category
+          </Text>
+          {subtitle && (
+            <Text fontSize="sm" color="fg.muted">
+              {subtitle}
+            </Text>
+          )}
+        </Stack>
+        {onSelectCategory && selectedCategory && (
+          <Button
+            size="xs"
+            variant="ghost"
+            onClick={() => onSelectCategory(undefined)}
+          >
+            Clear filter
+          </Button>
+        )}
+      </HStack>
       {slices.length === 0 ? (
         <Box py={16} textAlign="center" color="fg.muted">
           {emptyMessage}
@@ -85,6 +123,11 @@ export default function StatementCategoryChart({
                 outerRadius="95%"
                 paddingAngle={1.5}
                 isAnimationActive={false}
+                cursor={onSelectCategory ? "pointer" : undefined}
+                onClick={(_, index) => {
+                  const slice = slices[index];
+                  if (slice) toggleCategory(slice.category);
+                }}
               >
                 <Label
                   content={({ viewBox }) => (
@@ -100,11 +143,21 @@ export default function StatementCategoryChart({
             </PieChart>
           </Chart.Root>
 
-          <Stack as="ul" aria-label="Categories" flex={1} w="full" gap={2}>
+          <Stack
+            as="ul"
+            aria-label="Categories"
+            flex={1}
+            w="full"
+            gap={onSelectCategory ? 1 : 2}
+            maxH={onSelectCategory ? "320px" : undefined}
+            overflowY={onSelectCategory ? "auto" : undefined}
+            pr={onSelectCategory ? 1 : undefined}
+          >
             {slices.map((slice) => {
               const share = total > 0 ? (slice.value / total) * 100 : 0;
-              return (
-                <Box as="li" key={slice.name} listStyleType="none">
+              const selected = slice.category === selectedCategory;
+              const content = (
+                <>
                   <HStack justify="space-between" gap={2}>
                     <HStack gap={2} minW={0}>
                       <ColorSwatch value={slice.color} boxSize="2.5" rounded="full" />
@@ -132,6 +185,32 @@ export default function StatementCategoryChart({
                   <Text fontSize="xs" color="fg.muted" mt={1}>
                     {slice.count} {slice.count === 1 ? "line" : "lines"}
                   </Text>
+                </>
+              );
+              return (
+                <Box as="li" key={slice.category} listStyleType="none">
+                  {onSelectCategory ? (
+                    <Box
+                      as="button"
+                      w="full"
+                      textAlign="left"
+                      px={2.5}
+                      py={2}
+                      borderRadius="md"
+                      borderWidth="1px"
+                      borderColor={selected ? "border.emphasized" : "transparent"}
+                      bg={selected ? "bg.muted" : undefined}
+                      opacity={selectedCategory && !selected ? 0.6 : 1}
+                      _hover={{ bg: "bg.muted" }}
+                      cursor="pointer"
+                      aria-pressed={selected}
+                      onClick={() => toggleCategory(slice.category)}
+                    >
+                      {content}
+                    </Box>
+                  ) : (
+                    content
+                  )}
                 </Box>
               );
             })}

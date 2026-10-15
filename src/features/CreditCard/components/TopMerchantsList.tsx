@@ -5,9 +5,11 @@ import { formatCents } from "../utils/creditCard";
 export default function TopMerchantsList({
   merchants,
   emptyMessage = "No purchases in this statement.",
+  subtitle,
 }: {
   merchants: MerchantTotal[];
   emptyMessage?: string;
+  subtitle?: string;
 }) {
   return (
     <Box
@@ -18,9 +20,16 @@ export default function TopMerchantsList({
       p={4}
       h="full"
     >
-      <Text fontSize="lg" fontWeight="bold" mb={4}>
-        Top merchants
-      </Text>
+      <Stack gap={0.5} mb={4}>
+        <Text fontSize="lg" fontWeight="bold">
+          Top merchants
+        </Text>
+        {subtitle && (
+          <Text fontSize="sm" color="fg.muted">
+            {subtitle}
+          </Text>
+        )}
+      </Stack>
       {merchants.length === 0 ? (
         <Text fontSize="sm" color="fg.muted">
           {emptyMessage}

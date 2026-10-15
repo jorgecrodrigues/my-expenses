@@ -17,6 +17,7 @@ import {
   creditCardStatementValidator,
   creditCardTransactionExtractedFields,
   creditCardTransactionValidator,
+  periodTransactionValidator,
   statementReportValidator,
   yearReportValidator,
 } from "./lib/creditCardValidators";
@@ -204,30 +205,71 @@ export const getStatementReport = query({
   },
 });
 
-async function getYearStatements(
+async function getCompletedStatementsInRange(
   ctx: QueryCtx,
   userId: Id<"users">,
-  year: number,
-): Promise<YearStatement[]> {
-  const { start, end } = referenceMonthRange(year);
+  range: { start: string; end: string },
+): Promise<Doc<"creditCardStatements">[]> {
   const statements = await ctx.db
     .query("creditCardStatements")
     .withIndex("by_userId_and_referenceMonth", (q) =>
       q
         .eq("userId", userId)
-        .gte("referenceMonth", start)
-        .lte("referenceMonth", end),
+        .gte("referenceMonth", range.start)
+        .lte("referenceMonth", range.end),
     )
     .collect();
+  return statements.filter((statement) => statement.status === "completed");
+}
+
+async function getYearStatements(
+  ctx: QueryCtx,
+  userId: Id<"users">,
+  year: number,
+): Promise<YearStatement[]> {
+  const range = referenceMonthRange(year);
+  const statements = await getCompletedStatementsInRange(ctx, userId, range);
   return await Promise.all(
-    statements
-      .filter((statement) => statement.status === "completed")
-      .map(async (statement) => ({
-        issuer: statement.issuer,
-        referenceMonth: statement.referenceMonth ?? start,
-        transactions: await getStatementTransactions(ctx, statement._id),
-      })),
+    statements.map(async (statement) => ({
+      issuer: statement.issuer,
+      referenceMonth: statement.referenceMonth ?? range.start,
+      transactions: await getStatementTransactions(ctx, statement._id),
+    })),
   );
+}
+
+async function getPeriodTransactions(
+  ctx: QueryCtx,
+  userId: Id<"users">,
+  args: { year: number; month?: number; category?: string },
+) {
+  const statements = await getCompletedStatementsInRange(
+    ctx,
+    userId,
+    referenceMonthRange(args.year, args.month),
+  );
+  const { category } = args;
+  const lines = await Promise.all(
+    statements.map(async (statement) => {
+      const transactions =
+        category === undefined
+          ? await getStatementTransactions(ctx, statement._id)
+          : await ctx.db
+              .query("creditCardTransactions")
+              .withIndex("by_statementId_and_category_and_date", (q) =>
+                q.eq("statementId", statement._id).eq("category", category),
+              )
+              .collect();
+      return transactions.map((transaction) => ({
+        ...transaction,
+        issuer: statement.issuer,
+      }));
+    }),
+  );
+  return lines
+    .flat()
+    .filter((transaction) => transaction.type !== "payment")
+    .sort((a, b) => a.date.localeCompare(b.date));
 }
 
 /**
@@ -251,18 +293,46 @@ export const listStatementYears = query({
 });
 
 /**
- * Aggregates the caller's processed statements of one year, by the month
- * each statement refers to.
+ * Aggregates the caller's processed statements of one year, as a whole and by
+ * the month each statement refers to.
  *
  * @param year - The calendar year, e.g. 2026.
+ * @param category - When set, every figure except the category breakdown only
+ * counts this category.
  */
 export const getYearReport = query({
-  args: { year: v.number() },
+  args: { year: v.number(), category: v.optional(v.string()) },
   returns: yearReportValidator,
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const statements = await getYearStatements(ctx, userId, args.year);
-    return buildYearReport(args.year, statements);
+    return buildYearReport(args.year, statements, args.category);
+  },
+});
+
+/**
+ * Lists the lines of the caller's processed statements of a month, or of a
+ * category over the year, ordered by date. Payments are left out.
+ *
+ * @param year - The calendar year, e.g. 2026.
+ * @param month - 1 to 12; the month the statements refer to.
+ * @param category - Only lines of this category.
+ * @throws When neither a month nor a category is given, to keep the list
+ * bounded.
+ */
+export const listPeriodTransactions = query({
+  args: {
+    year: v.number(),
+    month: v.optional(v.number()),
+    category: v.optional(v.string()),
+  },
+  returns: v.array(periodTransactionValidator),
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    if (args.month === undefined && args.category === undefined) {
+      throw new Error("Select a month or a category to list transactions");
+    }
+    return await getPeriodTransactions(ctx, userId, args);
   },
 });
 

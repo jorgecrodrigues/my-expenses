@@ -92,15 +92,24 @@ function addTo(totals: Totals, name: string, amountCents: number) {
  * charges are positive, refunds and payments negative. Payments of the
  * previous statement are reported separately and never count as spending.
  */
+/** Category totals net of refunds, highest first. Payments are left out. */
+export function totalsByCategory(
+  transactions: ReportTransaction[],
+): CategoryTotal[] {
+  const categoryTotals: Totals = new Map();
+  for (const line of transactions.filter((t) => t.type !== "payment")) {
+    addTo(categoryTotals, line.category, line.amountCents);
+  }
+  return sortedTotals(categoryTotals).map(({ name, ...rest }) => ({
+    category: name,
+    ...rest,
+  }));
+}
+
 export function buildStatementReport(
   transactions: ReportTransaction[],
 ): StatementReport {
   const lines = transactions.filter((t) => t.type !== "payment");
-
-  const categoryTotals: Totals = new Map();
-  for (const line of lines) {
-    addTo(categoryTotals, line.category, line.amountCents);
-  }
 
   const merchantTotals: Totals = new Map();
   for (const line of lines.filter((t) => t.type === "purchase")) {
@@ -144,10 +153,7 @@ export function buildStatementReport(
     iofCents: sumBy(lines, (t) => t.type === "iof"),
     feesCents: sumBy(lines, (t) => t.type === "fee"),
     interestCents: sumBy(lines, (t) => t.type === "interest"),
-    byCategory: sortedTotals(categoryTotals).map(({ name, ...rest }) => ({
-      category: name,
-      ...rest,
-    })),
+    byCategory: totalsByCategory(lines),
     topMerchants: sortedTotals(merchantTotals)
       .slice(0, TOP_MERCHANTS_LIMIT)
       .map(({ name, ...rest }) => ({ merchant: name, ...rest })),
@@ -165,15 +171,8 @@ export interface IssuerTotal {
   totalSpentCents: number;
 }
 
-export interface MonthTotal {
-  /** "YYYY-MM" */
-  month: string;
-  totalSpentCents: number;
-  byIssuer: IssuerTotal[];
-}
-
-export interface YearReport {
-  year: number;
+/** Aggregates of a set of statements, optionally restricted to a category. */
+export interface PeriodSummary {
   statementCount: number;
   totalSpentCents: number;
   refundsCents: number;
@@ -184,10 +183,20 @@ export interface YearReport {
   feesCents: number;
   interestCents: number;
   byIssuer: IssuerTotal[];
+  /** Every category of the period, regardless of the category filter. */
   byCategory: CategoryTotal[];
   topMerchants: MerchantTotal[];
+}
+
+export interface MonthSummary extends PeriodSummary {
+  /** "YYYY-MM" */
+  month: string;
+}
+
+export interface YearReport extends PeriodSummary {
+  year: number;
   /** Always 12 entries, January to December. */
-  months: MonthTotal[];
+  months: MonthSummary[];
 }
 
 export interface YearStatement {
@@ -197,18 +206,20 @@ export interface YearStatement {
   transactions: ReportTransaction[];
 }
 
-const MIN_REPORT_YEAR = 2000;
-const MAX_REPORT_YEAR = 2100;
+export const MIN_REPORT_YEAR = 2000;
+export const MAX_REPORT_YEAR = 2100;
 
 /**
- * Bounds of the reference months of a year, for an index range query.
+ * Bounds of the reference months of a year, or of a single month of it, for
+ * an index range query.
  *
- * @throws When the year is not a plausible calendar year.
+ * @param month - 1 to 12; when omitted, the whole year.
+ * @throws When the year or month is out of range.
  */
-export function referenceMonthRange(year: number): {
-  start: string;
-  end: string;
-} {
+export function referenceMonthRange(
+  year: number,
+  month?: number,
+): { start: string; end: string } {
   if (
     !Number.isInteger(year) ||
     year < MIN_REPORT_YEAR ||
@@ -218,7 +229,14 @@ export function referenceMonthRange(year: number): {
       `Invalid year. Use a year between ${MIN_REPORT_YEAR} and ${MAX_REPORT_YEAR}`,
     );
   }
-  return { start: `${year}-01`, end: `${year}-12` };
+  if (month === undefined) {
+    return { start: `${year}-01`, end: `${year}-12` };
+  }
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    throw new Error("Invalid month. Use a month between 1 and 12");
+  }
+  const referenceMonth = `${year}-${String(month).padStart(2, "0")}`;
+  return { start: referenceMonth, end: referenceMonth };
 }
 
 /** Years of the given reference months, newest first, without duplicates. */
@@ -235,70 +253,80 @@ export function referenceMonthYears(
   return [...years].sort((a, b) => b - a);
 }
 
-function issuerTotals(
-  statements: { issuer: CreditCardIssuer; totalSpentCents: number }[],
-): IssuerTotal[] {
+function issuerTotals(statements: YearStatement[]): IssuerTotal[] {
   const totals = new Map<CreditCardIssuer, number>();
   for (const statement of statements) {
-    totals.set(
-      statement.issuer,
-      (totals.get(statement.issuer) ?? 0) + statement.totalSpentCents,
+    const spent = sumBy(statement.transactions, (t) =>
+      SPENDING_TYPES.includes(t.type),
     );
+    totals.set(statement.issuer, (totals.get(statement.issuer) ?? 0) + spent);
   }
   return [...totals.entries()]
     .map(([issuer, totalSpentCents]) => ({ issuer, totalSpentCents }))
     .sort((a, b) => b.totalSpentCents - a.totalSpentCents);
 }
 
+function summarizePeriod(
+  statements: YearStatement[],
+  category: string | undefined,
+): PeriodSummary {
+  const filtered =
+    category === undefined
+      ? statements
+      : statements.map((statement) => ({
+          ...statement,
+          transactions: statement.transactions.filter(
+            (t) => t.category === category,
+          ),
+        }));
+  const report = buildStatementReport(
+    filtered.flatMap((statement) => statement.transactions),
+  );
+  return {
+    statementCount: statements.length,
+    totalSpentCents: report.totalSpentCents,
+    refundsCents: report.refundsCents,
+    netCents: report.netCents,
+    transactionCount: report.transactionCount,
+    internationalCents: report.internationalCents,
+    iofCents: report.iofCents,
+    feesCents: report.feesCents,
+    interestCents: report.interestCents,
+    byIssuer: issuerTotals(filtered),
+    byCategory:
+      category === undefined
+        ? report.byCategory
+        : totalsByCategory(statements.flatMap((s) => s.transactions)),
+    topMerchants: report.topMerchants,
+  };
+}
+
 /**
- * Aggregates the statements of one year. Statements are placed in the month
- * they refer to, so a purchase made in December but billed in January counts
- * for January. Installment details are left out: summing them across
- * statements would count the same purchase once per month.
+ * Aggregates the statements of one year, as a whole and month by month.
+ * Statements are placed in the month they refer to, so a purchase made in
+ * December but billed in January counts for January. Installment details are
+ * left out: summing them across statements would count the same purchase once
+ * per month.
+ *
+ * @param category - When set, every figure except `byCategory` only counts
+ * this category.
  */
 export function buildYearReport(
   year: number,
   statements: YearStatement[],
+  category?: string,
 ): YearReport {
-  const overall = buildStatementReport(
-    statements.flatMap((statement) => statement.transactions),
-  );
-  const spentByStatement = statements.map((statement) => ({
-    issuer: statement.issuer,
-    referenceMonth: statement.referenceMonth,
-    totalSpentCents: sumBy(statement.transactions, (t) =>
-      SPENDING_TYPES.includes(t.type),
-    ),
-  }));
-
   const months = Array.from({ length: 12 }, (_, index) => {
     const month = `${year}-${String(index + 1).padStart(2, "0")}`;
-    const byIssuer = issuerTotals(
-      spentByStatement.filter((statement) => statement.referenceMonth === month),
-    );
     return {
       month,
-      totalSpentCents: byIssuer.reduce((sum, i) => sum + i.totalSpentCents, 0),
-      byIssuer,
+      ...summarizePeriod(
+        statements.filter((statement) => statement.referenceMonth === month),
+        category,
+      ),
     };
   });
-
-  return {
-    year,
-    statementCount: statements.length,
-    totalSpentCents: overall.totalSpentCents,
-    refundsCents: overall.refundsCents,
-    netCents: overall.netCents,
-    transactionCount: overall.transactionCount,
-    internationalCents: overall.internationalCents,
-    iofCents: overall.iofCents,
-    feesCents: overall.feesCents,
-    interestCents: overall.interestCents,
-    byIssuer: issuerTotals(spentByStatement),
-    byCategory: overall.byCategory,
-    topMerchants: overall.topMerchants,
-    months,
-  };
+  return { year, ...summarizePeriod(statements, category), months };
 }
 
 const brl = new Intl.NumberFormat("pt-BR", {
