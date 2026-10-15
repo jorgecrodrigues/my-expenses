@@ -23,8 +23,10 @@ type Slice = {
 
 export default function StatementCategoryChart({
   categories,
+  emptyMessage = "No spending in this statement.",
 }: {
   categories: CategoryTotal[];
+  emptyMessage?: string;
 }) {
   const slices: Slice[] = React.useMemo(
     () =>
@@ -59,7 +61,7 @@ export default function StatementCategoryChart({
       </Text>
       {slices.length === 0 ? (
         <Box py={16} textAlign="center" color="fg.muted">
-          No spending in this statement.
+          {emptyMessage}
         </Box>
       ) : (
         <Stack direction={{ base: "column", md: "row" }} gap={4} align="center">

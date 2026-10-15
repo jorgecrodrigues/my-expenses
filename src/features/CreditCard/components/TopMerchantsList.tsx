@@ -4,8 +4,10 @@ import { formatCents } from "../utils/creditCard";
 
 export default function TopMerchantsList({
   merchants,
+  emptyMessage = "No purchases in this statement.",
 }: {
   merchants: MerchantTotal[];
+  emptyMessage?: string;
 }) {
   return (
     <Box
@@ -21,7 +23,7 @@ export default function TopMerchantsList({
       </Text>
       {merchants.length === 0 ? (
         <Text fontSize="sm" color="fg.muted">
-          No purchases in this statement.
+          {emptyMessage}
         </Text>
       ) : (
         <Stack as="ol" aria-label="Top merchants" gap={2}>

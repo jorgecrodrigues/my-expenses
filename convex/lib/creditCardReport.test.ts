@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   buildStatementReport,
   buildSummaryPrompt,
+  buildYearReport,
   formatCents,
+  referenceMonthRange,
+  referenceMonthYears,
   TOP_MERCHANTS_LIMIT,
   type ReportTransaction,
 } from "./creditCardReport";
@@ -77,6 +80,95 @@ describe("buildStatementReport", () => {
     expect(empty.totalSpentCents).toBe(0);
     expect(empty.byCategory).toEqual([]);
     expect(empty.installments).toEqual([]);
+  });
+});
+
+describe("buildYearReport", () => {
+  const january: ReportTransaction[] = [
+    { description: "IFOOD", merchant: "iFood", amountCents: 4000, category: "food", type: "purchase" },
+    { description: "Pagamento", amountCents: -50000, category: "other", type: "payment" },
+  ];
+  const interJanuary: ReportTransaction[] = [
+    { description: "Uber", merchant: "Uber", amountCents: 1500, category: "transport", type: "purchase" },
+    { description: "IOF", amountCents: 50, category: "fees", type: "iof" },
+  ];
+  const march: ReportTransaction[] = [
+    { description: "IFOOD", merchant: "iFood", amountCents: 6000, category: "food", type: "purchase" },
+    { description: "Estorno", amountCents: -1000, category: "food", type: "refund" },
+    { description: "Netflix 1/3", amountCents: 3000, category: "subscriptions", type: "purchase", installmentCurrent: 1, installmentTotal: 3 },
+  ];
+
+  const report = buildYearReport(2026, [
+    { issuer: "nubank", referenceMonth: "2026-01", transactions: january },
+    { issuer: "inter", referenceMonth: "2026-01", transactions: interJanuary },
+    { issuer: "nubank", referenceMonth: "2026-03", transactions: march },
+  ]);
+
+  it("sums the spending of every statement of the year", () => {
+    expect(report.year).toBe(2026);
+    expect(report.statementCount).toBe(3);
+    expect(report.totalSpentCents).toBe(4000 + 1500 + 50 + 6000 + 3000);
+    expect(report.refundsCents).toBe(1000);
+    expect(report.netCents).toBe(report.totalSpentCents - 1000);
+    expect(report.iofCents).toBe(50);
+    expect(report.transactionCount).toBe(6);
+  });
+
+  it("splits the spending by month and issuer", () => {
+    expect(report.months).toHaveLength(12);
+    expect(report.months[0]).toEqual({
+      month: "2026-01",
+      totalSpentCents: 5550,
+      byIssuer: [
+        { issuer: "nubank", totalSpentCents: 4000 },
+        { issuer: "inter", totalSpentCents: 1550 },
+      ],
+    });
+    expect(report.months[1]).toEqual({ month: "2026-02", totalSpentCents: 0, byIssuer: [] });
+    expect(report.months[2].totalSpentCents).toBe(9000);
+    expect(report.months[11].month).toBe("2026-12");
+    expect(report.byIssuer).toEqual([
+      { issuer: "nubank", totalSpentCents: 13000 },
+      { issuer: "inter", totalSpentCents: 1550 },
+    ]);
+  });
+
+  it("merges categories and merchants across statements", () => {
+    expect(report.byCategory[0]).toEqual({ category: "food", totalCents: 9000, count: 3 });
+    expect(report.topMerchants[0]).toEqual({ merchant: "iFood", totalCents: 10000, count: 2 });
+  });
+
+  it("returns twelve empty months when there are no statements", () => {
+    const empty = buildYearReport(2025, []);
+    expect(empty.totalSpentCents).toBe(0);
+    expect(empty.byIssuer).toEqual([]);
+    expect(empty.months.map((m) => m.month)).toEqual(
+      Array.from({ length: 12 }, (_, i) => `2025-${String(i + 1).padStart(2, "0")}`),
+    );
+  });
+});
+
+describe("referenceMonthRange", () => {
+  it("returns the first and last month of the year", () => {
+    expect(referenceMonthRange(2026)).toEqual({ start: "2026-01", end: "2026-12" });
+  });
+
+  it("rejects implausible years", () => {
+    expect(() => referenceMonthRange(2026.5)).toThrow("Invalid year");
+    expect(() => referenceMonthRange(1999)).toThrow("Invalid year");
+    expect(() => referenceMonthRange(2101)).toThrow("Invalid year");
+  });
+});
+
+describe("referenceMonthYears", () => {
+  it("lists distinct years newest first, ignoring missing or malformed months", () => {
+    expect(
+      referenceMonthYears(["2025-12", "2026-01", undefined, "2026-03", "bad", "2024-07"]),
+    ).toEqual([2026, 2025, 2024]);
+  });
+
+  it("returns an empty list when there are no months", () => {
+    expect(referenceMonthYears([])).toEqual([]);
   });
 });
 
