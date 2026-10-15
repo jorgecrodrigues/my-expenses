@@ -10,7 +10,7 @@ import Logo from "@/shared/components/Logo";
 const HomePage = lazy(() => import("@/features/Home/pages/HomePage"));
 const DashboardPage = lazy(() => import("@/features/Dashboard/pages/DashboardPage"));
 const ExpensePage = lazy(() => import("@/features/Expense/pages/ExpensePage"));
-const BankAccountPage = lazy(() => import("@/features/BankAccount/pages/BankAccountPage"));
+// const BankAccountPage = lazy(() => import("@/features/BankAccount/pages/BankAccountPage"));
 const CreditCardPage = lazy(() => import("@/features/CreditCard/pages/CreditCardPage"));
 const StatementReportPage = lazy(
   () => import("@/features/CreditCard/pages/StatementReportPage"),

@@ -10,7 +10,7 @@ import {
 import { useLocation } from "wouter";
 import type { IconProps } from "@tabler/icons-react";
 import {
-  IconBuildingBank,
+  // IconBuildingBank,
   IconChevronRight,
   IconCreditCard,
   IconDashboard,

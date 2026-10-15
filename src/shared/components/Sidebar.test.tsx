@@ -61,12 +61,16 @@ describe("Sidebar", () => {
     expect(screen.getByRole("button", { name: /dashboard/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /expenses/i })).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /bank accounts/i }),
-    ).toBeInTheDocument();
-    expect(
       screen.getByRole("button", { name: /credit card/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /about/i })).toBeInTheDocument();
+  });
+
+  it("hides the disabled Bank Accounts item", () => {
+    renderWithChakra(<Sidebar />);
+    expect(
+      screen.queryByRole("button", { name: /bank accounts/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not show the Menu heading when collapsed", () => {
@@ -109,7 +113,6 @@ describe("Sidebar", () => {
     ["Home", "/"],
     ["Dashboard", "/dashboard"],
     ["Expenses", "/expenses"],
-    ["Bank Accounts", "/bank-accounts"],
     ["Credit Card", "/credit-card"],
     ["About", "/about"],
   ])("calls navigate with %s when the item is clicked", async (label, path) => {
