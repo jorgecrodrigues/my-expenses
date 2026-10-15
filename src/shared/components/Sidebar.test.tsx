@@ -15,6 +15,7 @@ vi.mock("wouter", () => ({
 vi.mock("@tabler/icons-react", () => ({
   IconBuildingBank: () => <span data-icon="bank" />,
   IconChevronRight: () => <span data-icon="chevron" />,
+  IconCreditCard: () => <span data-icon="credit-card" />,
   IconDashboard: () => <span data-icon="dashboard" />,
   IconHome: () => <span data-icon="home" />,
   IconInfoCircle: () => <span data-icon="info" />,
@@ -62,6 +63,9 @@ describe("Sidebar", () => {
     expect(
       screen.getByRole("button", { name: /bank accounts/i }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /credit card/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /about/i })).toBeInTheDocument();
   });
 
@@ -92,11 +96,21 @@ describe("Sidebar", () => {
     );
   });
 
+  it("treats statement report paths as active for Credit Card", () => {
+    mockLocation = "/credit-card/statements/abc123";
+    renderWithChakra(<Sidebar />);
+    expect(screen.getByRole("button", { name: /credit card/i })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
   it.each([
     ["Home", "/"],
     ["Dashboard", "/dashboard"],
     ["Expenses", "/expenses"],
     ["Bank Accounts", "/bank-accounts"],
+    ["Credit Card", "/credit-card"],
     ["About", "/about"],
   ])("calls navigate with %s when the item is clicked", async (label, path) => {
     const user = userEvent.setup();

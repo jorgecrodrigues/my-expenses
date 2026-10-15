@@ -75,6 +75,14 @@ vi.mock("@/features/BankAccount/pages/BankAccountPage", () => ({
   default: () => <div>BankAccountPage</div>,
 }));
 
+vi.mock("@/features/CreditCard/pages/CreditCardPage", () => ({
+  default: () => <div>CreditCardPage</div>,
+}));
+
+vi.mock("@/features/CreditCard/pages/StatementReportPage", () => ({
+  default: () => <div>StatementReportPage</div>,
+}));
+
 vi.mock("@/features/About/pages/AboutPage", () => ({
   default: () => <div>AboutPage</div>,
 }));
@@ -103,6 +111,17 @@ describe("App", () => {
     expect(screen.getByText("Header")).toBeInTheDocument();
     expect(screen.getByText("Sidebar")).toBeInTheDocument();
     expect(await screen.findByText("HomePage")).toBeInTheDocument();
+  });
+
+  it.each([
+    ["/credit-card", "CreditCardPage"],
+    ["/credit-card/statements/abc123", "StatementReportPage"],
+  ])("renders the credit card route %s", async (path, page) => {
+    authState = "authenticated";
+    window.history.pushState({}, "", path);
+    render(<App />);
+
+    expect(await screen.findByText(page)).toBeInTheDocument();
   });
 
   it("renders 404 for unknown route when authenticated", async () => {

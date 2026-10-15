@@ -12,6 +12,7 @@ import type { IconProps } from "@tabler/icons-react";
 import {
   IconBuildingBank,
   IconChevronRight,
+  IconCreditCard,
   IconDashboard,
   IconHome,
   IconInfoCircle,
@@ -52,6 +53,12 @@ const NAV_ITEMS: NavItem[] = [
     label: "Bank Accounts",
     icon: IconBuildingBank,
     isActive: (pathname) => pathname.includes("/bank-accounts"),
+  },
+  {
+    path: "/credit-card",
+    label: "Credit Card",
+    icon: IconCreditCard,
+    isActive: (pathname) => pathname.includes("/credit-card"),
   },
   {
     path: "/about",
