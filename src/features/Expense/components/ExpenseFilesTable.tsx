@@ -17,6 +17,7 @@ import type { FunctionReturnType } from "convex/server";
 import { api } from "../../../../convex/_generated/api";
 import { toaster } from "@/components/ui/toaster";
 import { popoverContentMotion } from "@/shared/animation/chakraMotion";
+import useIsMobile from "@/shared/hooks/useIsMobile";
 import {
   formatFileUploadedAt,
   getExpenseFileIcon,
@@ -32,6 +33,61 @@ interface ExpenseFilesTableProps {
 }
 
 export default function ExpenseFilesTable({ files }: ExpenseFilesTableProps) {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <Stack gap={0}>
+        {files === undefined && (
+          <HStack justify="center" py={4} color="fg.muted">
+            <Spinner size="sm" />
+            <Text>Loading files...</Text>
+          </HStack>
+        )}
+        {files?.length === 0 && (
+          <Text textAlign="center" py={4} color="fg.muted">
+            No files uploaded for this expense.
+          </Text>
+        )}
+        {files !== undefined && files.length > 0 && (
+          <Stack as="ul" aria-label="Files" gap={0} listStyleType="none">
+            {files.map((file) => (
+              <HStack
+                as="li"
+                key={file._id}
+                gap={3}
+                py={2.5}
+                borderBottomWidth="1px"
+                borderColor="border.subtle"
+                _last={{ borderBottomWidth: 0 }}
+              >
+                <Icon
+                  as={getExpenseFileIcon(file.contentType)}
+                  boxSize={5}
+                  color="fg.muted"
+                  flexShrink={0}
+                />
+                <Stack gap={0} minW={0} flex="1">
+                  <Text truncate title={file.filename}>
+                    {file.filename}
+                  </Text>
+                  <Text fontSize="xs" color="fg.muted">
+                    <FormatByte value={file.size} /> ·{" "}
+                    {formatFileUploadedAt(file._creationTime)}
+                  </Text>
+                </Stack>
+                <HStack gap={0} flexShrink={0}>
+                  <DownloadFileButton file={file} />
+                  <DeleteFileButton file={file} />
+                </HStack>
+              </HStack>
+            ))}
+          </Stack>
+        )}
+      </Stack>
+    );
+  }
+
   return (
     <Table.ScrollArea>
       <Table.Root size="sm">
