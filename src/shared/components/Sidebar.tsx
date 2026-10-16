@@ -8,65 +8,10 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { useLocation } from "wouter";
-import type { IconProps } from "@tabler/icons-react";
-import {
-  // IconBuildingBank,
-  IconChevronRight,
-  IconCreditCard,
-  IconDashboard,
-  IconHome,
-  IconInfoCircle,
-  IconReceipt,
-} from "@tabler/icons-react";
-import type { ComponentType } from "react";
+import { IconChevronRight } from "@tabler/icons-react";
 import { Tooltip } from "@/components/ui/tooltip";
+import { NAV_ITEMS } from "@/shared/components/navItems";
 import { useSidebarState } from "../hooks/useSidebarState";
-
-type NavItem = {
-  path: string;
-  label: string;
-  icon: ComponentType<IconProps>;
-  isActive: (pathname: string) => boolean;
-};
-
-const NAV_ITEMS: NavItem[] = [
-  {
-    path: "/",
-    label: "Home",
-    icon: IconHome,
-    isActive: (pathname) => pathname === "/",
-  },
-  {
-    path: "/dashboard",
-    label: "Dashboard",
-    icon: IconDashboard,
-    isActive: (pathname) => pathname.includes("/dashboard"),
-  },
-  {
-    path: "/expenses",
-    label: "Expenses",
-    icon: IconReceipt,
-    isActive: (pathname) => pathname.includes("/expenses"),
-  },
-  // {
-  //   path: "/bank-accounts",
-  //   label: "Bank Accounts",
-  //   icon: IconBuildingBank,
-  //   isActive: (pathname) => pathname.includes("/bank-accounts"),
-  // },
-  {
-    path: "/credit-card",
-    label: "Credit Card",
-    icon: IconCreditCard,
-    isActive: (pathname) => pathname.includes("/credit-card"),
-  },
-  {
-    path: "/about",
-    label: "About",
-    icon: IconInfoCircle,
-    isActive: (pathname) => pathname.includes("/about"),
-  },
-];
 
 export default function Sidebar() {
   const [location, navigate] = useLocation();

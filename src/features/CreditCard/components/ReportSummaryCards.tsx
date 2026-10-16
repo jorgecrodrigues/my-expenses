@@ -16,9 +16,10 @@ export function ReportCard({
       borderColor="border.subtle"
       borderRadius="xl"
       bg="bg.panel"
-      p={4}
+      p={{ base: 3, md: 4 }}
+      minW={0}
     >
-      <Stat.Root gap={1}>
+      <Stat.Root gap={1} size={{ base: "sm", md: "md" }}>
         <Stat.Label>{label}</Stat.Label>
         {children}
       </Stat.Root>
@@ -30,7 +31,7 @@ export default function ReportSummaryCards({ report }: { report: StatementReport
   const charges = report.feesCents + report.iofCents + report.interestCents;
 
   return (
-    <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} gap={4}>
+    <SimpleGrid columns={{ base: 2, xl: 4 }} gap={{ base: 3, md: 4 }}>
       <ReportCard label="Total spent">
         <Stat.ValueText>{formatCents(report.totalSpentCents)}</Stat.ValueText>
         <Stat.HelpText>

@@ -12,6 +12,12 @@ import {
 // eslint-disable-next-line react-refresh/only-export-components
 export const toaster = createToaster({
   placement: "bottom",
+  offsets: {
+    top: "1rem",
+    left: "1rem",
+    right: "1rem",
+    bottom: "var(--toaster-offset-bottom, 1rem)",
+  },
   pauseOnPageIdle: true,
   duration: 2000,
 });
@@ -19,7 +25,16 @@ export const toaster = createToaster({
 export const Toaster = () => {
   return (
     <Portal>
-      <ChakraToaster toaster={toaster} insetInline={{ mdDown: "4" }}>
+      <ChakraToaster
+        toaster={toaster}
+        insetInline={{ mdDown: "4" }}
+        css={{
+          "--toaster-offset-bottom": {
+            base: "calc(5rem + env(safe-area-inset-bottom, 0px))",
+            md: "1rem",
+          },
+        }}
+      >
         {(toast) => (
           <Toast.Root width={{ md: "sm" }}>
             {toast.type === "loading" ? (

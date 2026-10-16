@@ -33,69 +33,71 @@ interface ExpenseFilesTableProps {
 
 export default function ExpenseFilesTable({ files }: ExpenseFilesTableProps) {
   return (
-    <Table.Root size="sm">
-      <Table.Header>
-        <Table.Row>
-          <Table.ColumnHeader>File</Table.ColumnHeader>
-          <Table.ColumnHeader>Uploaded</Table.ColumnHeader>
-          <Table.ColumnHeader w="1%" textAlign="end">
-            Actions
-          </Table.ColumnHeader>
-        </Table.Row>
-      </Table.Header>
-      <Table.Body>
-        {files === undefined && (
+    <Table.ScrollArea>
+      <Table.Root size="sm">
+        <Table.Header>
           <Table.Row>
-            <Table.Cell colSpan={3}>
-              <HStack justify="center" py={4} color="fg.muted">
-                <Spinner size="sm" />
-                <Text>Loading files...</Text>
-              </HStack>
-            </Table.Cell>
+            <Table.ColumnHeader>File</Table.ColumnHeader>
+            <Table.ColumnHeader>Uploaded</Table.ColumnHeader>
+            <Table.ColumnHeader w="1%" textAlign="end">
+              Actions
+            </Table.ColumnHeader>
           </Table.Row>
-        )}
-        {files?.length === 0 && (
-          <Table.Row>
-            <Table.Cell colSpan={3}>
-              <Text textAlign="center" py={4} color="fg.muted">
-                No files uploaded for this expense.
-              </Text>
-            </Table.Cell>
-          </Table.Row>
-        )}
-        {files?.map((file) => (
-          <Table.Row key={file._id}>
-            <Table.Cell>
-              <HStack gap={3}>
-                <Icon
-                  as={getExpenseFileIcon(file.contentType)}
-                  boxSize={5}
-                  color="fg.muted"
-                  flexShrink={0}
-                />
-                <Stack gap={0} minW={0}>
-                  <Text truncate title={file.filename}>
-                    {file.filename}
-                  </Text>
-                  <Text fontSize="xs" color="fg.muted">
-                    {file.contentType} · <FormatByte value={file.size} />
-                  </Text>
-                </Stack>
-              </HStack>
-            </Table.Cell>
-            <Table.Cell color="fg.muted" whiteSpace="nowrap">
-              {formatFileUploadedAt(file._creationTime)}
-            </Table.Cell>
-            <Table.Cell>
-              <HStack gap={1} justify="flex-end">
-                <DownloadFileButton file={file} />
-                <DeleteFileButton file={file} />
-              </HStack>
-            </Table.Cell>
-          </Table.Row>
-        ))}
-      </Table.Body>
-    </Table.Root>
+        </Table.Header>
+        <Table.Body>
+          {files === undefined && (
+            <Table.Row>
+              <Table.Cell colSpan={3}>
+                <HStack justify="center" py={4} color="fg.muted">
+                  <Spinner size="sm" />
+                  <Text>Loading files...</Text>
+                </HStack>
+              </Table.Cell>
+            </Table.Row>
+          )}
+          {files?.length === 0 && (
+            <Table.Row>
+              <Table.Cell colSpan={3}>
+                <Text textAlign="center" py={4} color="fg.muted">
+                  No files uploaded for this expense.
+                </Text>
+              </Table.Cell>
+            </Table.Row>
+          )}
+          {files?.map((file) => (
+            <Table.Row key={file._id}>
+              <Table.Cell>
+                <HStack gap={3}>
+                  <Icon
+                    as={getExpenseFileIcon(file.contentType)}
+                    boxSize={5}
+                    color="fg.muted"
+                    flexShrink={0}
+                  />
+                  <Stack gap={0} minW={0}>
+                    <Text truncate title={file.filename}>
+                      {file.filename}
+                    </Text>
+                    <Text fontSize="xs" color="fg.muted">
+                      {file.contentType} · <FormatByte value={file.size} />
+                    </Text>
+                  </Stack>
+                </HStack>
+              </Table.Cell>
+              <Table.Cell color="fg.muted" whiteSpace="nowrap">
+                {formatFileUploadedAt(file._creationTime)}
+              </Table.Cell>
+              <Table.Cell>
+                <HStack gap={1} justify="flex-end">
+                  <DownloadFileButton file={file} />
+                  <DeleteFileButton file={file} />
+                </HStack>
+              </Table.Cell>
+            </Table.Row>
+          ))}
+        </Table.Body>
+      </Table.Root>
+    </Table.ScrollArea>
   );
 }
 

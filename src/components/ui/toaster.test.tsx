@@ -97,6 +97,12 @@ describe("toaster", () => {
     expect(createToasterArgs).toEqual([
       {
         placement: "bottom",
+        offsets: {
+          top: "1rem",
+          left: "1rem",
+          right: "1rem",
+          bottom: "var(--toaster-offset-bottom, 1rem)",
+        },
         pauseOnPageIdle: true,
         duration: 2000,
       },

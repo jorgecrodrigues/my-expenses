@@ -27,7 +27,7 @@ function MonthOverMonth({
 
   const increased = change > 0;
   return (
-    <HStack gap={1}>
+    <HStack gap={1} wrap="wrap">
       <Badge colorPalette={increased ? "red" : "green"} variant="subtle" gap={0}>
         {increased ? <Stat.UpIndicator /> : <Stat.DownIndicator />}
         {Math.abs(change).toFixed(1)}%
@@ -59,7 +59,7 @@ export default function YearSummaryCards({
       : 0;
 
   return (
-    <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} gap={4}>
+    <SimpleGrid columns={{ base: 2, xl: 4 }} gap={{ base: 3, md: 4 }}>
       <ReportCard label="Total spent">
         <Stat.ValueText>{formatCents(period.totalSpentCents)}</Stat.ValueText>
         <Stat.HelpText>
