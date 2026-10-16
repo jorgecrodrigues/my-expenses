@@ -8,6 +8,8 @@ import {
   formatDay,
   issuerLabel,
 } from "../utils/creditCard";
+import useIsMobile from "@/shared/hooks/useIsMobile";
+import TransactionCard from "./TransactionCard";
 import TransactionCategorySelect from "./TransactionCategorySelect";
 
 const PER_PAGE = 50;
@@ -60,6 +62,7 @@ export default function PeriodTransactionsTable({
     [customCategories],
   );
   const [visibleCount, setVisibleCount] = React.useState(PER_PAGE);
+  const isMobile = useIsMobile();
 
   const header = (
     <Stack gap={0.5} mb={4}>
@@ -86,6 +89,56 @@ export default function PeriodTransactionsTable({
   }
 
   const visible = transactions?.slice(0, visibleCount) ?? [];
+  const showMoreButton = transactions !== undefined &&
+    transactions.length > visibleCount && (
+      <Button
+        variant="surface"
+        onClick={() => setVisibleCount((count) => count + PER_PAGE)}
+      >
+        Show more ({transactions.length - visibleCount} left)
+      </Button>
+    );
+
+  if (isMobile) {
+    return (
+      <Panel>
+        {header}
+        <Stack gap={3}>
+          {visible.length > 0 && (
+            <Stack
+              as="ul"
+              aria-label="Transactions"
+              gap={0}
+              listStyleType="none"
+            >
+              {visible.map((transaction) => (
+                <TransactionCard
+                  key={transaction._id}
+                  transaction={transaction}
+                  categoryOptions={categoryOptions}
+                  tag={
+                    <Text fontSize="xs" color="fg.muted">
+                      {issuerLabel(transaction.issuer)}
+                    </Text>
+                  }
+                />
+              ))}
+            </Stack>
+          )}
+          {transactions === undefined &&
+            Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton key={index} variant="shine" height="56px" />
+            ))}
+          {transactions?.length === 0 && (
+            <Text textAlign="center" color="fg.muted" py={6}>
+              No transactions in this period.
+            </Text>
+          )}
+          {showMoreButton}
+        </Stack>
+      </Panel>
+    );
+  }
 
   return (
     <Panel>
@@ -169,21 +222,11 @@ export default function PeriodTransactionsTable({
               </Table.Row>
             )}
 
-            {transactions !== undefined &&
-              transactions.length > visibleCount && (
-                <Table.Row>
-                  <Table.Cell colSpan={COLUMNS}>
-                    <Button
-                      variant="surface"
-                      onClick={() =>
-                        setVisibleCount((count) => count + PER_PAGE)
-                      }
-                    >
-                      Show more ({transactions.length - visibleCount} left)
-                    </Button>
-                  </Table.Cell>
-                </Table.Row>
-              )}
+            {showMoreButton && (
+              <Table.Row>
+                <Table.Cell colSpan={COLUMNS}>{showMoreButton}</Table.Cell>
+              </Table.Row>
+            )}
           </Table.Body>
         </Table.Root>
       </Table.ScrollArea>

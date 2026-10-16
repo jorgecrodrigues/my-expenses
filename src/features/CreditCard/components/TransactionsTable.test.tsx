@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import "@testing-library/jest-dom/vitest";
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import type { Doc, Id } from "../../../../convex/_generated/dataModel";
+import { mockMatchMedia } from "@/test/mockMatchMedia";
 
 const { paginatedState, usePaginatedQueryMock } = vi.hoisted(() => {
   const paginatedState = {
@@ -129,5 +130,48 @@ describe("TransactionsTable", () => {
     expect(
       screen.getByText("No transactions in this category."),
     ).toBeInTheDocument();
+  });
+
+  describe("on mobile", () => {
+    const originalMatchMedia = window.matchMedia;
+
+    beforeEach(() => {
+      mockMatchMedia(true);
+    });
+
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it("lists the transactions as cards instead of a table", () => {
+      paginatedState.results = [
+        transaction({
+          merchant: "Oxxo Store",
+          installmentCurrent: 1,
+          installmentTotal: 3,
+        }),
+      ];
+      renderTable();
+
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      const list = screen.getByRole("list", { name: "Transactions" });
+      const card = within(list).getByRole("listitem");
+      expect(within(card).getByText("Oxxo Store")).toBeInTheDocument();
+      expect(within(card).getByText("OXXO")).toBeInTheDocument();
+      expect(within(card).getByText("Installment 1/3")).toBeInTheDocument();
+      expect(within(card).getByText("01/10/2026")).toBeInTheDocument();
+      expect(within(card).getByText("Purchase")).toBeInTheDocument();
+      expect(within(card).getByText("groceries")).toBeInTheDocument();
+    });
+
+    it("shows an empty state when nothing matches", () => {
+      paginatedState.results = [];
+      renderTable();
+
+      expect(screen.queryByRole("list")).not.toBeInTheDocument();
+      expect(
+        screen.getByText("No transactions in this category."),
+      ).toBeInTheDocument();
+    });
   });
 });

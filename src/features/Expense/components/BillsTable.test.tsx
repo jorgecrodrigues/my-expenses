@@ -1,6 +1,14 @@
 // @vitest-environment jsdom
 import React from "react";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import {
   cleanup,
   fireEvent,
@@ -46,6 +54,7 @@ vi.mock("@tabler/icons-react", () => ({
 
 import type { Id } from "../../../../convex/_generated/dataModel";
 import type { Expense } from "@/features/Dashboard/utils/dashboardMetrics";
+import { mockMatchMedia } from "@/test/mockMatchMedia";
 import BillsTable from "./BillsTable";
 
 const NOW = new Date(2025, 2, 15, 12, 0);
@@ -356,6 +365,79 @@ describe("BillsTable", () => {
 
     await waitFor(() => expect(setExpensesPaid).toHaveBeenCalled());
     expect(screen.getByRole("status")).toHaveTextContent("1 selected");
+  });
+
+  describe("on mobile", () => {
+    const originalMatchMedia = window.matchMedia;
+
+    beforeEach(() => {
+      mockMatchMedia(true);
+    });
+
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    function cardNames() {
+      return within(screen.getByRole("list", { name: "Bills" }))
+        .getAllByRole("listitem")
+        .map((item) => item.querySelector("p")?.textContent);
+    }
+
+    it("lists bills as cards instead of a table", () => {
+      renderTable();
+
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      expect(cardNames()).toEqual(["Rent", "Power", "Internet"]);
+      expect(screen.getByText("Electricity bill")).toBeInTheDocument();
+      expect(screen.getByText("5d late")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Edit Rent" }),
+      ).toBeInTheDocument();
+      expect(screen.getByText("3 bills")).toBeInTheDocument();
+      expect(screen.getByText("R$ 1.800,00")).toBeInTheDocument();
+    });
+
+    it("sorts with the sort select", () => {
+      renderTable();
+      const select = screen.getByRole("combobox", { name: "Sort bills" });
+
+      fireEvent.change(select, { target: { value: "amount-asc" } });
+      expect(cardNames()).toEqual(["Internet", "Power", "Rent"]);
+
+      fireEvent.change(select, { target: { value: "name-desc" } });
+      expect(cardNames()).toEqual(["Rent", "Power", "Internet"]);
+
+      fireEvent.change(select, { target: { value: "date-desc" } });
+      expect(cardNames()).toEqual(["Internet", "Power", "Rent"]);
+    });
+
+    it("selects bills and marks one as paid from its card", async () => {
+      const user = userEvent.setup();
+      setExpensesPaid.mockResolvedValue(null);
+      renderTable();
+
+      await user.click(screen.getByRole("checkbox", { name: "Select all" }));
+      expect(await screen.findByRole("status")).toHaveTextContent(
+        "3 selected",
+      );
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Mark Power as paid" }),
+      );
+      await waitFor(() =>
+        expect(setExpensesPaid).toHaveBeenCalledWith({
+          ids: ["power"],
+          paid: true,
+        }),
+      );
+    });
+
+    it("shows the empty message without cards", () => {
+      renderTable({ expenses: [] });
+      expect(screen.queryByRole("list")).not.toBeInTheDocument();
+      expect(screen.getByText("No bills for this month.")).toBeInTheDocument();
+    });
   });
 
   it("renders custom row actions", () => {

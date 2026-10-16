@@ -131,7 +131,7 @@ vi.mock("@chakra-ui/react", () => ({
     HelperText: () => null,
     ErrorText: () => null,
   },
-  HStack: ({ children }: { children: React.ReactNode }) => (
+  SimpleGrid: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
   IconButton: ({

@@ -14,9 +14,11 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
+import { mockMatchMedia } from "@/test/mockMatchMedia";
 
 const { paginatedState, retryMock, navigateMock, loadMoreMock } = vi.hoisted(
   () => ({
@@ -167,5 +169,68 @@ describe("StatementsList", () => {
     renderList();
     fireEvent.click(screen.getByRole("button", { name: "Load More" }));
     expect(loadMoreMock).toHaveBeenCalledWith(15);
+  });
+
+  describe("on mobile", () => {
+    const originalMatchMedia = window.matchMedia;
+
+    beforeEach(() => {
+      mockMatchMedia(true);
+    });
+
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it("lists statements as cards with their actions", async () => {
+      paginatedState.results = [
+        statement({
+          _id: "s1",
+          status: "completed",
+          referenceMonth: "2026-10",
+          dueDate: "2026-10-10",
+          totalAmountCents: 123456,
+        }),
+        statement({
+          _id: "s3",
+          status: "failed",
+          issuer: "inter",
+          errorMessage: "No transactions were found in the statement",
+        }),
+      ];
+      renderList();
+
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      const [completed, failed] = within(
+        screen.getByRole("list", { name: "Statements" }),
+      ).getAllByRole("listitem");
+
+      expect(within(completed).getByText("Oct 2026")).toBeInTheDocument();
+      expect(
+        within(completed).getByText("Nubank · Due 10/10/2026"),
+      ).toBeInTheDocument();
+      expect(within(completed).getByText("Ready")).toBeInTheDocument();
+      fireEvent.click(
+        within(completed).getByRole("button", { name: "View report" }),
+      );
+      expect(navigateMock).toHaveBeenCalledWith("/credit-card/statements/s1");
+
+      expect(within(failed).getByText("Inter")).toBeInTheDocument();
+      expect(
+        within(failed).getByText("No transactions were found in the statement"),
+      ).toBeInTheDocument();
+      fireEvent.click(
+        within(failed).getByRole("button", { name: "Process again" }),
+      );
+      await waitFor(() =>
+        expect(retryMock).toHaveBeenCalledWith({ statementId: "s3" }),
+      );
+    });
+
+    it("shows an empty state", () => {
+      renderList();
+      expect(screen.queryByRole("list")).not.toBeInTheDocument();
+      expect(screen.getByText(/no statements yet/i)).toBeInTheDocument();
+    });
   });
 });

@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import type { Doc, Id } from "../../../../convex/_generated/dataModel";
+import { mockMatchMedia } from "@/test/mockMatchMedia";
 
 type PeriodTransaction = Doc<"creditCardTransactions"> & {
   issuer: "nubank" | "inter";
@@ -126,5 +127,51 @@ describe("PeriodTransactionsTable", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show more (10 left)" }));
     expect(screen.getByText("Purchase 59")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /show more/i })).not.toBeInTheDocument();
+  });
+
+  describe("on mobile", () => {
+    const originalMatchMedia = window.matchMedia;
+
+    beforeEach(() => {
+      mockMatchMedia(true);
+    });
+
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it("lists the lines as cards with their card issuer", () => {
+      queryState.transactions = [
+        transaction(1, { merchant: "iFood", description: "IFOOD *A", issuer: "inter" }),
+        transaction(2, { description: "Estorno", amountCents: -500, type: "refund" }),
+      ];
+      renderTable({ monthIndex: 2 });
+
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      const cards = within(
+        screen.getByRole("list", { name: "Transactions" }),
+      ).getAllByRole("listitem");
+      expect(cards).toHaveLength(2);
+      expect(within(cards[0]).getByText("iFood")).toBeInTheDocument();
+      expect(within(cards[0]).getByText("IFOOD *A")).toBeInTheDocument();
+      expect(within(cards[0]).getByText("Inter")).toBeInTheDocument();
+      expect(within(cards[1]).getByText("Estorno")).toBeInTheDocument();
+      expect(within(cards[1]).getByText("Nubank")).toBeInTheDocument();
+    });
+
+    it("shows an empty state", () => {
+      queryState.transactions = [];
+      renderTable({ category: "food" });
+      expect(screen.getByText("No transactions in this period.")).toBeInTheDocument();
+    });
+
+    it("reveals more lines on demand", () => {
+      queryState.transactions = Array.from({ length: 60 }, (_, i) => transaction(i));
+      renderTable({ monthIndex: 2 });
+
+      expect(screen.getAllByRole("listitem")).toHaveLength(50);
+      fireEvent.click(screen.getByRole("button", { name: "Show more (10 left)" }));
+      expect(screen.getAllByRole("listitem")).toHaveLength(60);
+    });
   });
 });

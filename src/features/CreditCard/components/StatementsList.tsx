@@ -2,19 +2,22 @@ import React from "react";
 import { useMutation, usePaginatedQuery } from "convex/react";
 import {
   Badge,
+  Box,
   Button,
   HStack,
   IconButton,
   Skeleton,
+  Stack,
   Table,
   Text,
 } from "@chakra-ui/react";
 import { IconRefresh, IconReportAnalytics } from "@tabler/icons-react";
 import { useLocation } from "wouter";
 import useIntersectionObserver from "@/shared/hooks/useIntersectionObserver";
+import useIsMobile from "@/shared/hooks/useIsMobile";
 import { toaster } from "@/components/ui/toaster";
 import { api } from "../../../../convex/_generated/api";
-import type { Id } from "../../../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../../../convex/_generated/dataModel";
 import RemoveStatementDialog from "../modals/RemoveStatement";
 import StatementStatusBadge from "./StatementStatusBadge";
 import {
@@ -27,8 +30,52 @@ import {
 const PER_PAGE = 15;
 const COLUMNS = 6;
 
+function StatementActions({
+  statement,
+  onView,
+  onRetry,
+}: {
+  statement: Doc<"creditCardStatements">;
+  onView: () => void;
+  onRetry: () => void;
+}) {
+  return (
+    <HStack gap={1}>
+      {statement.status === "completed" && (
+        <IconButton
+          aria-label="View report"
+          title="View report"
+          variant="ghost"
+          size="sm"
+          onClick={onView}
+        >
+          <IconReportAnalytics />
+        </IconButton>
+      )}
+      {statement.status === "failed" && (
+        <IconButton
+          aria-label="Process again"
+          title="Process again"
+          variant="ghost"
+          size="sm"
+          onClick={onRetry}
+        >
+          <IconRefresh />
+        </IconButton>
+      )}
+      <RemoveStatementDialog statement={statement} />
+    </HStack>
+  );
+}
+
+const formatTotal = (statement: Doc<"creditCardStatements">) =>
+  statement.totalAmountCents !== undefined
+    ? formatCents(statement.totalAmountCents)
+    : "-";
+
 export default function StatementsList() {
   const [, navigate] = useLocation();
+  const isMobile = useIsMobile();
   const retryStatement = useMutation(api.creditCardStatements.retryStatement);
   const { ref, entry } = useIntersectionObserver({
     threshold: 1.0,
@@ -57,6 +104,91 @@ export default function StatementsList() {
       });
     }
   };
+
+  const renderActions = (statement: Doc<"creditCardStatements">) => (
+    <StatementActions
+      statement={statement}
+      onView={() => navigate(`/credit-card/statements/${statement._id}`)}
+      onRetry={() => handleRetry(statement._id)}
+    />
+  );
+
+  const isLoading = status === "LoadingFirstPage" || status === "LoadingMore";
+  const loadMoreButton = status === "CanLoadMore" && (
+    <Button variant="surface" onClick={() => loadMore(PER_PAGE)}>
+      Load More
+    </Button>
+  );
+  const emptyState = status === "Exhausted" && results.length === 0 && (
+    <Badge variant="outline" size="md" whiteSpace="normal">
+      No statements yet. Upload a Nubank or Inter PDF above.
+    </Badge>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <Stack gap={2}>
+          {results.length > 0 && (
+            <Stack as="ul" aria-label="Statements" gap={2} listStyleType="none">
+              {results.map((statement) => (
+                <Box
+                  as="li"
+                  key={statement._id}
+                  borderWidth="1px"
+                  borderColor="border.subtle"
+                  borderRadius="lg"
+                  bg="bg.panel"
+                  p={3}
+                >
+                  <HStack justify="space-between" align="flex-start" gap={3}>
+                    <Stack gap={0.5} minW={0}>
+                      <HStack gap={2} wrap="wrap">
+                        <Text fontSize="sm" fontWeight="medium">
+                          {formatReferenceMonth(statement.referenceMonth)}
+                        </Text>
+                        <StatementStatusBadge status={statement.status} />
+                      </HStack>
+                      <Text fontSize="xs" color="fg.muted">
+                        {issuerLabel(statement.issuer)}
+                        {statement.dueDate &&
+                          ` · Due ${formatDay(statement.dueDate)}`}
+                      </Text>
+                      <Text fontSize="xs" color="fg.subtle" truncate>
+                        {statement.filename}
+                      </Text>
+                    </Stack>
+                    <Text
+                      fontSize="sm"
+                      fontWeight="semibold"
+                      whiteSpace="nowrap"
+                    >
+                      {formatTotal(statement)}
+                    </Text>
+                  </HStack>
+                  {statement.status === "failed" && statement.errorMessage && (
+                    <Text fontSize="xs" color="fg.error" mt={2}>
+                      {statement.errorMessage}
+                    </Text>
+                  )}
+                  <HStack justify="flex-end" mt={1}>
+                    {renderActions(statement)}
+                  </HStack>
+                </Box>
+              ))}
+            </Stack>
+          )}
+          {isLoading &&
+            Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton key={index} variant="shine" height="88px" />
+            ))}
+          {loadMoreButton}
+          {emptyState}
+        </Stack>
+        <div ref={ref} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -90,9 +222,7 @@ export default function StatementsList() {
                   {formatDay(statement.dueDate)}
                 </Table.Cell>
                 <Table.Cell fontSize="xs" color="fg.subtle">
-                  {statement.totalAmountCents !== undefined
-                    ? formatCents(statement.totalAmountCents)
-                    : "-"}
+                  {formatTotal(statement)}
                 </Table.Cell>
                 <Table.Cell fontSize="xs">
                   <StatementStatusBadge status={statement.status} />
@@ -102,69 +232,32 @@ export default function StatementsList() {
                     </Text>
                   )}
                 </Table.Cell>
-                <Table.Cell>
-                  <HStack gap={1}>
-                    {statement.status === "completed" && (
-                      <IconButton
-                        aria-label="View report"
-                        title="View report"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          navigate(`/credit-card/statements/${statement._id}`)
-                        }
-                      >
-                        <IconReportAnalytics />
-                      </IconButton>
-                    )}
-                    {statement.status === "failed" && (
-                      <IconButton
-                        aria-label="Process again"
-                        title="Process again"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRetry(statement._id)}
-                      >
-                        <IconRefresh />
-                      </IconButton>
-                    )}
-                    <RemoveStatementDialog statement={statement} />
-                  </HStack>
-                </Table.Cell>
+                <Table.Cell>{renderActions(statement)}</Table.Cell>
               </Table.Row>
             ))}
 
-            {status === "LoadingFirstPage" || status === "LoadingMore"
-              ? Array.from({ length: 3 }).map((_, index) => (
-                  <Table.Row key={`skeleton-${index}`}>
-                    {Array.from({ length: COLUMNS }).map((_, cellIndex) => (
-                      <Table.Cell key={cellIndex}>
-                        <Skeleton variant="shine" height="20px" />
-                      </Table.Cell>
-                    ))}
-                  </Table.Row>
-                ))
-              : null}
+            {isLoading &&
+              Array.from({ length: 3 }).map((_, index) => (
+                <Table.Row key={`skeleton-${index}`}>
+                  {Array.from({ length: COLUMNS }).map((_, cellIndex) => (
+                    <Table.Cell key={cellIndex}>
+                      <Skeleton variant="shine" height="20px" />
+                    </Table.Cell>
+                  ))}
+                </Table.Row>
+              ))}
 
-            {status === "CanLoadMore" ? (
+            {loadMoreButton && (
               <Table.Row>
-                <Table.Cell colSpan={COLUMNS}>
-                  <Button variant="surface" onClick={() => loadMore(PER_PAGE)}>
-                    Load More
-                  </Button>
-                </Table.Cell>
+                <Table.Cell colSpan={COLUMNS}>{loadMoreButton}</Table.Cell>
               </Table.Row>
-            ) : null}
+            )}
 
-            {status === "Exhausted" && results.length === 0 ? (
+            {emptyState && (
               <Table.Row>
-                <Table.Cell colSpan={COLUMNS}>
-                  <Badge variant="outline" size="md">
-                    No statements yet. Upload a Nubank or Inter PDF above.
-                  </Badge>
-                </Table.Cell>
+                <Table.Cell colSpan={COLUMNS}>{emptyState}</Table.Cell>
               </Table.Row>
-            ) : null}
+            )}
           </Table.Body>
         </Table.Root>
       </Table.ScrollArea>

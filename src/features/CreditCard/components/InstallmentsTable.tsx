@@ -1,5 +1,6 @@
-import { Box, Table, Text } from "@chakra-ui/react";
+import { Box, HStack, Stack, Table, Text } from "@chakra-ui/react";
 import type { InstallmentItem } from "../../../../convex/lib/creditCardReport";
+import useIsMobile from "@/shared/hooks/useIsMobile";
 import { formatCents } from "../utils/creditCard";
 
 export default function InstallmentsTable({
@@ -7,6 +8,8 @@ export default function InstallmentsTable({
 }: {
   installments: InstallmentItem[];
 }) {
+  const isMobile = useIsMobile();
+
   return (
     <Box
       borderWidth="1px"
@@ -23,6 +26,39 @@ export default function InstallmentsTable({
         <Text fontSize="sm" color="fg.muted">
           No installment purchases in this statement.
         </Text>
+      ) : isMobile ? (
+        <Stack as="ul" aria-label="Installments" gap={0} listStyleType="none">
+          {installments.map((item, index) => (
+            <Box
+              as="li"
+              key={`${item.description}-${index}`}
+              py={2.5}
+              borderBottomWidth="1px"
+              borderColor="border.subtle"
+              _last={{ borderBottomWidth: 0, pb: 0 }}
+              _first={{ pt: 0 }}
+            >
+              <HStack justify="space-between" align="flex-start" gap={3}>
+                <Stack gap={0.5} minW={0}>
+                  <Text fontSize="sm" lineClamp={2}>
+                    {item.description}
+                  </Text>
+                  <Text fontSize="xs" color="fg.subtle">
+                    {`Installment ${item.installmentCurrent}/${item.installmentTotal}`}
+                  </Text>
+                </Stack>
+                <Stack gap={0.5} align="flex-end" flexShrink={0}>
+                  <Text fontSize="sm" fontWeight="medium">
+                    {formatCents(item.amountCents)}
+                  </Text>
+                  <Text fontSize="xs" color="fg.warning">
+                    {formatCents(item.remainingCents)} left
+                  </Text>
+                </Stack>
+              </HStack>
+            </Box>
+          ))}
+        </Stack>
       ) : (
         <Table.ScrollArea>
           <Table.Root size="sm">
