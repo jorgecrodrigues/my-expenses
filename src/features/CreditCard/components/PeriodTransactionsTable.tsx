@@ -90,89 +90,103 @@ export default function PeriodTransactionsTable({
   return (
     <Panel>
       {header}
-      <Table.Root size="sm" striped>
-        <Table.Header>
-          <Table.Row>
-            <Table.ColumnHeader>Date</Table.ColumnHeader>
-            <Table.ColumnHeader>Description</Table.ColumnHeader>
-            <Table.ColumnHeader>Card</Table.ColumnHeader>
-            <Table.ColumnHeader>Category</Table.ColumnHeader>
-            <Table.ColumnHeader textAlign="end">Amount</Table.ColumnHeader>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
-          {visible.map((transaction) => (
-            <Table.Row key={transaction._id}>
-              <Table.Cell fontSize="xs" color="fg.subtle" whiteSpace="nowrap">
-                {formatDay(transaction.date)}
-              </Table.Cell>
-              <Table.Cell fontSize="xs">
-                <Text fontWeight="medium">
-                  {transaction.merchant ?? transaction.description}
-                </Text>
-                {transaction.merchant && (
-                  <Text color="fg.muted">{transaction.description}</Text>
-                )}
-                {transaction.installmentCurrent !== undefined && (
-                  <Text color="fg.muted">
-                    Installment {transaction.installmentCurrent}/
-                    {transaction.installmentTotal}
-                  </Text>
-                )}
-              </Table.Cell>
-              <Table.Cell fontSize="xs">{issuerLabel(transaction.issuer)}</Table.Cell>
-              <Table.Cell fontSize="xs">
-                <TransactionCategorySelect
-                  transactionId={transaction._id}
-                  category={transaction.category}
-                  description={transaction.merchant ?? transaction.description}
-                  options={categoryOptions}
-                />
-              </Table.Cell>
-              <Table.Cell
-                fontSize="xs"
-                textAlign="end"
-                whiteSpace="nowrap"
-                color={transaction.amountCents < 0 ? "fg.success" : undefined}
-              >
-                {formatCents(transaction.amountCents)}
-              </Table.Cell>
+      <Table.ScrollArea>
+        <Table.Root size="sm" striped>
+          <Table.Header>
+            <Table.Row>
+              <Table.ColumnHeader>Date</Table.ColumnHeader>
+              <Table.ColumnHeader>Description</Table.ColumnHeader>
+              <Table.ColumnHeader>Card</Table.ColumnHeader>
+              <Table.ColumnHeader>Category</Table.ColumnHeader>
+              <Table.ColumnHeader textAlign="end">Amount</Table.ColumnHeader>
             </Table.Row>
-          ))}
-
-          {transactions === undefined &&
-            Array.from({ length: 3 }).map((_, index) => (
-              <Table.Row key={`skeleton-${index}`}>
-                {Array.from({ length: COLUMNS }).map((_, cellIndex) => (
-                  <Table.Cell key={cellIndex}>
-                    <Skeleton variant="shine" height="20px" />
-                  </Table.Cell>
-                ))}
+          </Table.Header>
+          <Table.Body>
+            {visible.map((transaction) => (
+              <Table.Row key={transaction._id}>
+                <Table.Cell fontSize="xs" color="fg.subtle" whiteSpace="nowrap">
+                  {formatDay(transaction.date)}
+                </Table.Cell>
+                <Table.Cell fontSize="xs">
+                  <Text fontWeight="medium">
+                    {transaction.merchant ?? transaction.description}
+                  </Text>
+                  {transaction.merchant && (
+                    <Text color="fg.muted">{transaction.description}</Text>
+                  )}
+                  {transaction.installmentCurrent !== undefined && (
+                    <Text color="fg.muted">
+                      Installment {transaction.installmentCurrent}/
+                      {transaction.installmentTotal}
+                    </Text>
+                  )}
+                </Table.Cell>
+                <Table.Cell fontSize="xs">
+                  {issuerLabel(transaction.issuer)}
+                </Table.Cell>
+                <Table.Cell fontSize="xs">
+                  <TransactionCategorySelect
+                    transactionId={transaction._id}
+                    category={transaction.category}
+                    description={
+                      transaction.merchant ?? transaction.description
+                    }
+                    options={categoryOptions}
+                  />
+                </Table.Cell>
+                <Table.Cell
+                  fontSize="xs"
+                  textAlign="end"
+                  whiteSpace="nowrap"
+                  color={transaction.amountCents < 0 ? "fg.success" : undefined}
+                >
+                  {formatCents(transaction.amountCents)}
+                </Table.Cell>
               </Table.Row>
             ))}
 
-          {transactions?.length === 0 && (
-            <Table.Row>
-              <Table.Cell colSpan={COLUMNS} textAlign="center" color="fg.muted" py={6}>
-                No transactions in this period.
-              </Table.Cell>
-            </Table.Row>
-          )}
+            {transactions === undefined &&
+              Array.from({ length: 3 }).map((_, index) => (
+                <Table.Row key={`skeleton-${index}`}>
+                  {Array.from({ length: COLUMNS }).map((_, cellIndex) => (
+                    <Table.Cell key={cellIndex}>
+                      <Skeleton variant="shine" height="20px" />
+                    </Table.Cell>
+                  ))}
+                </Table.Row>
+              ))}
 
-          {transactions !== undefined && transactions.length > visibleCount && (
-            <Table.Row>
-              <Table.Cell colSpan={COLUMNS}>
-                <Button
-                  variant="surface"
-                  onClick={() => setVisibleCount((count) => count + PER_PAGE)}
+            {transactions?.length === 0 && (
+              <Table.Row>
+                <Table.Cell
+                  colSpan={COLUMNS}
+                  textAlign="center"
+                  color="fg.muted"
+                  py={6}
                 >
-                  Show more ({transactions.length - visibleCount} left)
-                </Button>
-              </Table.Cell>
-            </Table.Row>
-          )}
-        </Table.Body>
-      </Table.Root>
+                  No transactions in this period.
+                </Table.Cell>
+              </Table.Row>
+            )}
+
+            {transactions !== undefined &&
+              transactions.length > visibleCount && (
+                <Table.Row>
+                  <Table.Cell colSpan={COLUMNS}>
+                    <Button
+                      variant="surface"
+                      onClick={() =>
+                        setVisibleCount((count) => count + PER_PAGE)
+                      }
+                    >
+                      Show more ({transactions.length - visibleCount} left)
+                    </Button>
+                  </Table.Cell>
+                </Table.Row>
+              )}
+          </Table.Body>
+        </Table.Root>
+      </Table.ScrollArea>
     </Panel>
   );
 }

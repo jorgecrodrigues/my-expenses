@@ -35,9 +35,10 @@ function SummaryCard({
       borderColor="border.subtle"
       borderRadius="xl"
       bg="bg.panel"
-      p={4}
+      p={{ base: 3, md: 4 }}
+      minW={0}
     >
-      <Stat.Root gap={1}>
+      <Stat.Root gap={1} size={{ base: "sm", md: "md" }}>
         <Stat.Label>{label}</Stat.Label>
         {children}
       </Stat.Root>
@@ -58,7 +59,7 @@ function MonthOverMonth({ current, previous }: Required<SummaryCardsProps>) {
 
   const increased = change > 0;
   return (
-    <HStack gap={1}>
+    <HStack gap={1} wrap="wrap">
       <Badge
         colorPalette={increased ? "red" : "green"}
         variant="subtle"
@@ -79,7 +80,7 @@ const CARD_LABELS = ["Total", "Paid", "Left to pay", "Overdue"] as const;
 export default function SummaryCards({ current, previous }: SummaryCardsProps) {
   if (!current || !previous) {
     return (
-      <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} gap={4}>
+      <SimpleGrid columns={{ base: 2, xl: 4 }} gap={{ base: 3, md: 4 }}>
         {CARD_LABELS.map((label) => (
           <SummaryCard key={label} label={label}>
             <Skeleton height="32px" width="70%" variant="shine" />
@@ -96,7 +97,7 @@ export default function SummaryCards({ current, previous }: SummaryCardsProps) {
     current.total > 0 ? Math.round((current.paid / current.total) * 100) : 0;
 
   return (
-    <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} gap={4}>
+    <SimpleGrid columns={{ base: 2, xl: 4 }} gap={{ base: 3, md: 4 }}>
       <SummaryCard label="Total">
         <Stat.ValueText>{formatBRL(current.total)}</Stat.ValueText>
         <Stat.HelpText>

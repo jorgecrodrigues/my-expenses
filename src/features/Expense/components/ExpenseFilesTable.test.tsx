@@ -74,6 +74,7 @@ vi.mock("@chakra-ui/react", () => {
       Body: Div,
     },
     Table: {
+      ScrollArea: Div,
       Root: ({ children }: { children: React.ReactNode }) => (
         <table>{children}</table>
       ),

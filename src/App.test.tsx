@@ -55,6 +55,10 @@ vi.mock("@/shared/components/Sidebar", () => ({
   default: () => <div>Sidebar</div>,
 }));
 
+vi.mock("@/shared/components/MobileNav", () => ({
+  default: () => <div>MobileNav</div>,
+}));
+
 vi.mock("@/features/Auth/pages/SignIn", () => ({
   default: () => <div>SignIn</div>,
 }));
@@ -110,6 +114,7 @@ describe("App", () => {
 
     expect(screen.getByText("Header")).toBeInTheDocument();
     expect(screen.getByText("Sidebar")).toBeInTheDocument();
+    expect(screen.getByText("MobileNav")).toBeInTheDocument();
     expect(await screen.findByText("HomePage")).toBeInTheDocument();
   });
 

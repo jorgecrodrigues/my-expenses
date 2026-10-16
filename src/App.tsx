@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import AppGrid from "@/shared/components/AppGrid";
 import Header from "@/shared/components/Header";
 import Sidebar from "@/shared/components/Sidebar";
+import MobileNav from "@/shared/components/MobileNav";
 import { Route, Switch } from "wouter";
 import { AuthLoading, Authenticated, Unauthenticated } from "convex/react";
 import { Box, Center } from "@chakra-ui/react";
@@ -37,9 +38,23 @@ export default function App() {
       <Authenticated>
         <AppGrid
           header={<Header />}
-          sidebar={<Sidebar />}
+          sidebar={
+            <>
+              <Box hideBelow="md" h="full">
+                <Sidebar />
+              </Box>
+              <Box hideFrom="md">
+                <MobileNav />
+              </Box>
+            </>
+          }
           children={
-            <Box px={5} py="30px" minH="calc(100vh - 60px)" bg="bg.muted">
+            <Box
+              px={{ base: 3, md: 5 }}
+              py={{ base: 4, md: "30px" }}
+              minH="full"
+              bg="bg.muted"
+            >
               <Suspense fallback={<RouteFallback />}>
                 <Switch>
                   <Route path="/" component={HomePage} />

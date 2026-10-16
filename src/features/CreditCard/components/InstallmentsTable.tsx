@@ -24,32 +24,38 @@ export default function InstallmentsTable({
           No installment purchases in this statement.
         </Text>
       ) : (
-        <Table.Root size="sm">
-          <Table.Header>
-            <Table.Row>
-              <Table.ColumnHeader>Purchase</Table.ColumnHeader>
-              <Table.ColumnHeader>Installment</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="end">This month</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="end">Remaining</Table.ColumnHeader>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {installments.map((item, index) => (
-              <Table.Row key={`${item.description}-${index}`}>
-                <Table.Cell fontSize="xs">{item.description}</Table.Cell>
-                <Table.Cell fontSize="xs" color="fg.subtle">
-                  {item.installmentCurrent}/{item.installmentTotal}
-                </Table.Cell>
-                <Table.Cell fontSize="xs" textAlign="end">
-                  {formatCents(item.amountCents)}
-                </Table.Cell>
-                <Table.Cell fontSize="xs" textAlign="end" color="fg.warning">
-                  {formatCents(item.remainingCents)}
-                </Table.Cell>
+        <Table.ScrollArea>
+          <Table.Root size="sm">
+            <Table.Header>
+              <Table.Row>
+                <Table.ColumnHeader>Purchase</Table.ColumnHeader>
+                <Table.ColumnHeader>Installment</Table.ColumnHeader>
+                <Table.ColumnHeader textAlign="end">
+                  This month
+                </Table.ColumnHeader>
+                <Table.ColumnHeader textAlign="end">
+                  Remaining
+                </Table.ColumnHeader>
               </Table.Row>
-            ))}
-          </Table.Body>
-        </Table.Root>
+            </Table.Header>
+            <Table.Body>
+              {installments.map((item, index) => (
+                <Table.Row key={`${item.description}-${index}`}>
+                  <Table.Cell fontSize="xs">{item.description}</Table.Cell>
+                  <Table.Cell fontSize="xs" color="fg.subtle">
+                    {item.installmentCurrent}/{item.installmentTotal}
+                  </Table.Cell>
+                  <Table.Cell fontSize="xs" textAlign="end">
+                    {formatCents(item.amountCents)}
+                  </Table.Cell>
+                  <Table.Cell fontSize="xs" textAlign="end" color="fg.warning">
+                    {formatCents(item.remainingCents)}
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table.Root>
+        </Table.ScrollArea>
       )}
     </Box>
   );
