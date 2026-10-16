@@ -10,6 +10,7 @@ import {
   IconButton,
   Input,
   InputGroup,
+  NativeSelect,
   Skeleton,
   Stack,
   Table,
@@ -36,10 +37,22 @@ import {
   type ExpenseStatus,
 } from "@/features/Dashboard/utils/dashboardMetrics";
 import OptionToggle from "@/shared/components/OptionToggle";
+import useIsMobile from "@/shared/hooks/useIsMobile";
 
 type StatusFilter = "all" | "open" | "overdue" | "paid";
 type SortKey = "date" | "amount" | "name";
 type SortState = { key: SortKey; direction: "asc" | "desc" };
+
+const SORT_OPTIONS: { label: string; sort: SortState }[] = [
+  { label: "Due date (soonest)", sort: { key: "date", direction: "asc" } },
+  { label: "Due date (latest)", sort: { key: "date", direction: "desc" } },
+  { label: "Amount (highest)", sort: { key: "amount", direction: "desc" } },
+  { label: "Amount (lowest)", sort: { key: "amount", direction: "asc" } },
+  { label: "Name (A–Z)", sort: { key: "name", direction: "asc" } },
+  { label: "Name (Z–A)", sort: { key: "name", direction: "desc" } },
+];
+
+const sortValue = ({ key, direction }: SortState) => `${key}-${direction}`;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -73,6 +86,154 @@ function daysFromToday(date: string, now: Date) {
 
 const pluralizeBills = (count: number) =>
   `${count} ${count === 1 ? "bill" : "bills"}`;
+
+const formatDueDate = (date: string) =>
+  new Date(date).toLocaleDateString("pt-BR", { dateStyle: "medium" });
+
+function BillStatus({
+  expense,
+  status,
+  updating,
+  onTogglePaid,
+}: {
+  expense: Expense;
+  status: ExpenseStatus;
+  updating: boolean;
+  onTogglePaid: () => void;
+}) {
+  const badge = STATUS_BADGE[status];
+  const paid = status === "paid";
+  return (
+    <HStack gap={1}>
+      <Badge
+        colorPalette={badge.colorPalette}
+        variant="subtle"
+        title={
+          expense.paidAt
+            ? `Paid on ${formatDueDate(expense.paidAt)}`
+            : undefined
+        }
+      >
+        {badge.label}
+      </Badge>
+      <IconButton
+        size={{ base: "xs", md: "2xs" }}
+        variant="ghost"
+        colorPalette={paid ? "gray" : "green"}
+        aria-label={`Mark ${expense.name} as ${paid ? "unpaid" : "paid"}`}
+        title={paid ? "Mark as unpaid" : "Mark as paid"}
+        loading={updating}
+        onClick={onTogglePaid}
+      >
+        {paid ? <IconArrowBackUp /> : <IconCheck />}
+      </IconButton>
+    </HStack>
+  );
+}
+
+function BillCard({
+  expense,
+  status,
+  selected,
+  updating,
+  onSelectedChange,
+  onTogglePaid,
+  category,
+  onCategoryChange,
+  actions,
+  now,
+}: {
+  expense: Expense;
+  status: ExpenseStatus;
+  selected: boolean;
+  updating: boolean;
+  onSelectedChange: (checked: boolean) => void;
+  onTogglePaid: () => void;
+  category?: string;
+  onCategoryChange?: (category: string) => void;
+  actions: React.ReactNode;
+  now: Date;
+}) {
+  return (
+    <Box
+      as="li"
+      borderWidth="1px"
+      borderColor={selected ? "border.emphasized" : "border.subtle"}
+      borderRadius="lg"
+      bg={selected ? "bg.muted" : undefined}
+      p={3}
+      data-selected={selected ? "" : undefined}
+    >
+      <HStack align="flex-start" gap={3}>
+        <Checkbox.Root
+          size="sm"
+          mt={0.5}
+          checked={selected}
+          onCheckedChange={(details) =>
+            onSelectedChange(details.checked === true)
+          }
+        >
+          <Checkbox.HiddenInput aria-label={`Select ${expense.name}`} />
+          <Checkbox.Control />
+        </Checkbox.Root>
+        <Stack gap={2} flex="1" minW={0}>
+          <HStack justify="space-between" align="flex-start" gap={3}>
+            <Box minW={0}>
+              <Text
+                fontSize="sm"
+                fontWeight="medium"
+                truncate
+                title={expense.name}
+              >
+                {expense.name}
+              </Text>
+              {expense.description && (
+                <Text
+                  fontSize="xs"
+                  color="fg.muted"
+                  truncate
+                  title={expense.description}
+                >
+                  {expense.description}
+                </Text>
+              )}
+            </Box>
+            <Text fontSize="sm" fontWeight="semibold" whiteSpace="nowrap">
+              {formatBRL(expense.amount)}
+            </Text>
+          </HStack>
+          <HStack gap={2} wrap="wrap" rowGap={0}>
+            <Text fontSize="xs" color="fg.muted">
+              {formatDueDate(expense.date)}
+            </Text>
+            <DueHint expense={expense} status={status} now={now} />
+          </HStack>
+          <HStack justify="space-between" gap={2} wrap="wrap">
+            <HStack gap={2} wrap="wrap" minW={0}>
+              <BillStatus
+                expense={expense}
+                status={status}
+                updating={updating}
+                onTogglePaid={onTogglePaid}
+              />
+              <CategoryLabel
+                category={expense.category}
+                onSelect={
+                  onCategoryChange && expense.category !== category
+                    ? onCategoryChange
+                    : undefined
+                }
+              />
+            </HStack>
+            <HStack gap={0} ms="auto">
+              {actions}
+            </HStack>
+          </HStack>
+        </Stack>
+      </HStack>
+    </Box>
+  );
+}
 
 function DueHint({
   expense,
@@ -228,6 +389,7 @@ export default function BillsTable({
   );
 
   const setExpensesPaid = useMutation(api.expenses.setExpensesPaid);
+  const isMobile = useIsMobile();
 
   const withStatus = React.useMemo(
     () =>
@@ -348,6 +510,14 @@ export default function BillsTable({
       setUpdating(ids, false);
     }
   };
+
+  const toggleOnePaid = (expense: Expense, status: ExpenseStatus) =>
+    updatePaid([expense], status !== "paid", { clearSelection: false });
+
+  const emptyMessage =
+    withStatus.length === 0
+      ? "No bills for this month."
+      : "No bills match the current filters.";
 
   const updateSelected = (paid: boolean) =>
     updatePaid(
@@ -479,6 +649,85 @@ export default function BillsTable({
             <Skeleton key={i} height="40px" variant="shine" borderRadius="md" />
           ))}
         </Stack>
+      ) : isMobile ? (
+        <Stack gap={3}>
+          <HStack justify="space-between" gap={3}>
+            <Checkbox.Root
+              size="sm"
+              checked={someSelected ? "indeterminate" : allSelected}
+              disabled={rows.length === 0}
+              onCheckedChange={toggleAll}
+            >
+              <Checkbox.HiddenInput />
+              <Checkbox.Control />
+              <Checkbox.Label fontSize="sm" color="fg.muted">
+                Select all
+              </Checkbox.Label>
+            </Checkbox.Root>
+            <NativeSelect.Root size="sm" width="auto">
+              <NativeSelect.Field
+                aria-label="Sort bills"
+                value={sortValue(sort)}
+                onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+                  const option = SORT_OPTIONS.find(
+                    (item) => sortValue(item.sort) === event.target.value,
+                  );
+                  if (option) setSort(option.sort);
+                }}
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <option
+                    key={sortValue(option.sort)}
+                    value={sortValue(option.sort)}
+                  >
+                    {option.label}
+                  </option>
+                ))}
+              </NativeSelect.Field>
+              <NativeSelect.Indicator />
+            </NativeSelect.Root>
+          </HStack>
+
+          {rows.length === 0 ? (
+            <Text textAlign="center" py={10} color="fg.muted">
+              {emptyMessage}
+            </Text>
+          ) : (
+            <Stack as="ul" aria-label="Bills" gap={2} listStyleType="none">
+              {rows.map(({ expense, status }) => (
+                <BillCard
+                  key={expense._id}
+                  expense={expense}
+                  status={status}
+                  selected={selectedIds.has(expense._id)}
+                  updating={updatingIds.has(expense._id)}
+                  onSelectedChange={(checked) =>
+                    toggleRow(expense._id, checked)
+                  }
+                  onTogglePaid={() => toggleOnePaid(expense, status)}
+                  category={category}
+                  onCategoryChange={onCategoryChange}
+                  actions={renderActions(expense)}
+                  now={now}
+                />
+              ))}
+            </Stack>
+          )}
+
+          {rows.length > 0 && (
+            <HStack
+              justify="space-between"
+              pt={3}
+              borderTopWidth="1px"
+              borderColor="border.subtle"
+            >
+              <Text color="fg.muted" fontSize="sm">
+                {pluralizeBills(rows.length)}
+              </Text>
+              <Text fontWeight="bold">{formatBRL(rowsTotal)}</Text>
+            </HStack>
+          )}
+        </Stack>
       ) : (
         <Table.ScrollArea>
           <Table.Root size="sm" interactive>
@@ -524,8 +773,6 @@ export default function BillsTable({
             <Table.Body>
               {rows.map(({ expense, status }) => {
                 const selected = selectedIds.has(expense._id);
-                const badge = STATUS_BADGE[status];
-                const paid = status === "paid";
                 return (
                   <Table.Row
                     key={expense._id}
@@ -577,42 +824,16 @@ export default function BillsTable({
                       />
                     </Table.Cell>
                     <Table.Cell whiteSpace="nowrap">
-                      <Text fontSize="sm">
-                        {new Date(expense.date).toLocaleDateString("pt-BR", {
-                          dateStyle: "medium",
-                        })}
-                      </Text>
+                      <Text fontSize="sm">{formatDueDate(expense.date)}</Text>
                       <DueHint expense={expense} status={status} now={now} />
                     </Table.Cell>
                     <Table.Cell>
-                      <HStack gap={1}>
-                        <Badge
-                          colorPalette={badge.colorPalette}
-                          variant="subtle"
-                          title={
-                            expense.paidAt
-                              ? `Paid on ${new Date(expense.paidAt).toLocaleDateString("pt-BR", { dateStyle: "medium" })}`
-                              : undefined
-                          }
-                        >
-                          {badge.label}
-                        </Badge>
-                        <IconButton
-                          size="2xs"
-                          variant="ghost"
-                          colorPalette={paid ? "gray" : "green"}
-                          aria-label={`Mark ${expense.name} as ${paid ? "unpaid" : "paid"}`}
-                          title={paid ? "Mark as unpaid" : "Mark as paid"}
-                          loading={updatingIds.has(expense._id)}
-                          onClick={() =>
-                            updatePaid([expense], !paid, {
-                              clearSelection: false,
-                            })
-                          }
-                        >
-                          {paid ? <IconArrowBackUp /> : <IconCheck />}
-                        </IconButton>
-                      </HStack>
+                      <BillStatus
+                        expense={expense}
+                        status={status}
+                        updating={updatingIds.has(expense._id)}
+                        onTogglePaid={() => toggleOnePaid(expense, status)}
+                      />
                     </Table.Cell>
                     <Table.Cell
                       textAlign="end"
@@ -636,9 +857,7 @@ export default function BillsTable({
                     py={10}
                     color="fg.muted"
                   >
-                    {withStatus.length === 0
-                      ? "No bills for this month."
-                      : "No bills match the current filters."}
+                    {emptyMessage}
                   </Table.Cell>
                 </Table.Row>
               )}

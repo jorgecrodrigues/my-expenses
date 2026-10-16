@@ -7,8 +7,10 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
+import { mockMatchMedia } from "@/test/mockMatchMedia";
 
 const { deleteFileMock, toasterMock } = vi.hoisted(() => ({
   deleteFileMock: vi.fn(),
@@ -30,9 +32,15 @@ vi.mock("@/shared/animation/chakraMotion", () => ({
 }));
 
 vi.mock("@chakra-ui/react", () => {
-  const Div = ({ children }: { children?: React.ReactNode }) => (
-    <div>{children}</div>
-  );
+  const Div = ({
+    children,
+    as: Tag = "div",
+    "aria-label": ariaLabel,
+  }: {
+    children?: React.ReactNode;
+    as?: React.ElementType;
+    "aria-label"?: string;
+  }) => <Tag aria-label={ariaLabel}>{children}</Tag>;
   const ButtonStub = ({
     children,
     onClick,
@@ -109,6 +117,7 @@ vi.mock("@tabler/icons-react", () => ({
 
 import type { Id } from "../../../../convex/_generated/dataModel";
 import ExpenseFilesTable, { type ExpenseFileWithUrl } from "./ExpenseFilesTable";
+import { formatFileUploadedAt } from "../utils/expenseFiles";
 
 function makeFile(
   overrides: Partial<ExpenseFileWithUrl> = {},
@@ -245,5 +254,52 @@ describe("ExpenseFilesTable", () => {
         expect.objectContaining({ type: "error", title: "Delete failed" }),
       ),
     );
+  });
+
+  describe("on mobile", () => {
+    const originalMatchMedia = window.matchMedia;
+
+    beforeEach(() => {
+      mockMatchMedia(true);
+    });
+
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia;
+    });
+
+    it("lists the files without a table", () => {
+      const file = makeFile();
+      render(<ExpenseFilesTable files={[file]} />);
+
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+      const item = within(
+        screen.getByRole("list", { name: "Files" }),
+      ).getByRole("listitem");
+      expect(
+        within(item).getByText("receipt.pdf", { selector: "p" }),
+      ).toBeInTheDocument();
+      expect(
+        within(item).getByText(formatFileUploadedAt(file._creationTime), {
+          exact: false,
+        }),
+      ).toHaveTextContent("2048 B ·");
+      expect(
+        within(item).getByRole("button", { name: "Download receipt.pdf" }),
+      ).toBeEnabled();
+      expect(
+        within(item).getByRole("button", { name: "Delete receipt.pdf" }),
+      ).toBeInTheDocument();
+    });
+
+    it("shows the loading and empty states", () => {
+      const { rerender } = render(<ExpenseFilesTable files={undefined} />);
+      expect(screen.getByText("Loading files...")).toBeInTheDocument();
+
+      rerender(<ExpenseFilesTable files={[]} />);
+      expect(
+        screen.getByText("No files uploaded for this expense."),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("list")).not.toBeInTheDocument();
+    });
   });
 });

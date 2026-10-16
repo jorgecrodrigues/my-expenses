@@ -6,10 +6,10 @@ import {
   CloseButton,
   Dialog,
   Field,
-  HStack,
   IconButton,
   Input,
   Portal,
+  SimpleGrid,
 } from "@chakra-ui/react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
@@ -31,7 +31,7 @@ interface CreateOrEditExpenseProps {
 }
 
 export default function CreateOrEditExpenseDialog(
-  props: CreateOrEditExpenseProps
+  props: CreateOrEditExpenseProps,
 ) {
   const { expense, ...rest } = props;
 
@@ -40,7 +40,7 @@ export default function CreateOrEditExpenseDialog(
   const user = useQuery(api.users.viewer);
 
   const expenseCategoryOptions = useQuery(
-    api.expenses.getExpenseCategoryOptions
+    api.expenses.getExpenseCategoryOptions,
   );
   const addExpense = useMutation(api.expenses.addExpense);
   const updateExpense = useMutation(api.expenses.updateExpense);
@@ -183,7 +183,11 @@ export default function CreateOrEditExpenseDialog(
                 <Field.ErrorText />
               </Field.Root>
 
-              <HStack>
+              <SimpleGrid
+                columns={{ base: 1, sm: 2 }}
+                gap={4}
+                alignItems="start"
+              >
                 <Field.Root>
                   <Field.Label>
                     Amount (BRL)
@@ -220,9 +224,13 @@ export default function CreateOrEditExpenseDialog(
                   </Field.HelperText>
                   <Field.ErrorText />
                 </Field.Root>
-              </HStack>
+              </SimpleGrid>
 
-              <HStack>
+              <SimpleGrid
+                columns={{ base: 1, sm: 2 }}
+                gap={4}
+                alignItems="start"
+              >
                 <CategoryCombobox
                   initialItems={expenseCategoryOptions}
                   selectedItem={expense?.category}
@@ -252,7 +260,7 @@ export default function CreateOrEditExpenseDialog(
                   </Field.HelperText>
                   <Field.ErrorText />
                 </Field.Root>
-              </HStack>
+              </SimpleGrid>
             </Dialog.Body>
             <Dialog.Footer>
               <Dialog.ActionTrigger asChild>
