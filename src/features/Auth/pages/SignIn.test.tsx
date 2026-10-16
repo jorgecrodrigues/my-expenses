@@ -1,10 +1,19 @@
 // @vitest-environment jsdom
-import React from "react";
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
+import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 
-const signInMock = vi.fn();
+const { signInMock, toasterMock } = vi.hoisted(() => ({
+  signInMock: vi.fn(),
+  toasterMock: { create: vi.fn() },
+}));
 
 vi.mock("@convex-dev/auth/react", () => ({
   useAuthActions: () => ({
@@ -12,51 +21,83 @@ vi.mock("@convex-dev/auth/react", () => ({
   }),
 }));
 
-vi.mock("@chakra-ui/react", () => ({
-  Button: ({
-    children,
-    onClick,
-  }: {
-    children: React.ReactNode;
-    onClick?: () => void;
-  }) => <button onClick={onClick}>{children}</button>,
-  Center: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  HStack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  VStack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
-  Heading: ({ children }: { children: React.ReactNode }) => (
-    <h1>{children}</h1>
-  ),
-}));
+vi.mock("@/components/ui/toaster", () => ({ toaster: toasterMock }));
 
 vi.mock("@/shared/components/icons/BrandIcon", () => ({
   BrandIcon: () => <div>BrandIcon</div>,
 }));
 
-vi.mock("@tabler/icons-react", () => ({
-  IconBrandGithub: () => <span aria-hidden="true">GitHubIcon</span>,
-}));
-
 import SignIn from "./SignIn";
 
-describe("SignIn", () => {
-  it("renders sign-in copy and github button", () => {
-    render(<SignIn />);
-    expect(screen.getByText("Sign In to your account")).toBeInTheDocument();
-    expect(
-      screen.getByText("Use your GitHub account to sign in and manage your expenses."),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /sign in with github/i })).toBeInTheDocument();
-  });
+function renderSignIn() {
+  render(
+    <ChakraProvider value={defaultSystem}>
+      <SignIn />
+    </ChakraProvider>,
+  );
+}
 
-  it("calls signIn('github') when clicking the button", () => {
-    render(<SignIn />);
-    const buttons = screen.getAllByRole("button", { name: /sign in with github/i });
-    expect(buttons.length).toBeGreaterThan(0);
-    fireEvent.click(buttons[0]);
-    expect(signInMock).toHaveBeenCalledWith("github");
-  });
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
 });
 
+describe("SignIn", () => {
+  it("renders the brand, sign-in copy and github button", () => {
+    renderSignIn();
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "My Expense Tracker" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Sign in to your account",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Use your GitHub account to sign in and manage your expenses.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /sign in with github/i }),
+    ).toBeEnabled();
+  });
+
+  it("calls signIn('github') and shows a loading state", () => {
+    signInMock.mockReturnValue(new Promise(() => {}));
+    renderSignIn();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /sign in with github/i }),
+    );
+
+    expect(signInMock).toHaveBeenCalledWith("github");
+    expect(
+      screen.getByRole("button", { name: /redirecting to github/i }),
+    ).toBeDisabled();
+  });
+
+  it("shows an error toast and re-enables the button when sign-in fails", async () => {
+    signInMock.mockRejectedValue(new Error("Popup blocked"));
+    renderSignIn();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /sign in with github/i }),
+    );
+
+    await waitFor(() =>
+      expect(toasterMock.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "error",
+          title: "Could not sign in",
+          description: "Popup blocked",
+        }),
+      ),
+    );
+    expect(
+      screen.getByRole("button", { name: /sign in with github/i }),
+    ).toBeEnabled();
+  });
+});
