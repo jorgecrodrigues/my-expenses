@@ -117,16 +117,32 @@ describe("PeriodTransactionsTable", () => {
     expect(screen.getByText("No transactions in this period.")).toBeInTheDocument();
   });
 
-  it("reveals more lines on demand", () => {
+  it("previews the first lines without a see more button when they all fit", () => {
+    queryState.transactions = Array.from({ length: 10 }, (_, i) => transaction(i));
+    renderTable({ monthIndex: 2 });
+
+    expect(screen.getByText("Purchase 9")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "See more" })).not.toBeInTheDocument();
+  });
+
+  it("lists every line in a dialog, revealing more on demand", async () => {
     queryState.transactions = Array.from({ length: 60 }, (_, i) => transaction(i));
     renderTable({ monthIndex: 2 });
 
-    expect(screen.getByText("Purchase 49")).toBeInTheDocument();
-    expect(screen.queryByText("Purchase 50")).not.toBeInTheDocument();
+    expect(screen.getByText("Purchase 9")).toBeInTheDocument();
+    expect(screen.queryByText("Purchase 10")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Show more (10 left)" }));
-    expect(screen.getByText("Purchase 59")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /show more/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "See more" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Mar 2026 · Food · 60 lines")).toBeInTheDocument();
+    expect(within(dialog).getByText("Purchase 49")).toBeInTheDocument();
+    expect(within(dialog).queryByText("Purchase 50")).not.toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Show more (10 left)" }));
+    expect(within(dialog).getByText("Purchase 59")).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole("button", { name: /show more/i }),
+    ).not.toBeInTheDocument();
   });
 
   describe("on mobile", () => {
@@ -165,13 +181,16 @@ describe("PeriodTransactionsTable", () => {
       expect(screen.getByText("No transactions in this period.")).toBeInTheDocument();
     });
 
-    it("reveals more lines on demand", () => {
+    it("previews the first lines and lists every line in a dialog", async () => {
       queryState.transactions = Array.from({ length: 60 }, (_, i) => transaction(i));
       renderTable({ monthIndex: 2 });
 
-      expect(screen.getAllByRole("listitem")).toHaveLength(50);
-      fireEvent.click(screen.getByRole("button", { name: "Show more (10 left)" }));
-      expect(screen.getAllByRole("listitem")).toHaveLength(60);
+      expect(screen.getAllByRole("listitem")).toHaveLength(10);
+      fireEvent.click(screen.getByRole("button", { name: "See more" }));
+      const dialog = await screen.findByRole("dialog");
+      expect(within(dialog).getAllByRole("listitem")).toHaveLength(50);
+      fireEvent.click(within(dialog).getByRole("button", { name: "Show more (10 left)" }));
+      expect(within(dialog).getAllByRole("listitem")).toHaveLength(60);
     });
   });
 });
