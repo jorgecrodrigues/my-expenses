@@ -1,19 +1,13 @@
 import React from "react";
 import { useQuery } from "convex/react";
-import { Box, Button, Skeleton, Stack, Table, Text } from "@chakra-ui/react";
+import { Box, HStack, Stack, Text } from "@chakra-ui/react";
 import { api } from "../../../../convex/_generated/api";
-import {
-  buildCategoryOptions,
-  formatCents,
-  formatDay,
-  issuerLabel,
-} from "../utils/creditCard";
-import useIsMobile from "@/shared/hooks/useIsMobile";
-import TransactionCard from "./TransactionCard";
-import TransactionCategorySelect from "./TransactionCategorySelect";
+import { buildCategoryOptions } from "../utils/creditCard";
+import useIsOverflowing from "@/shared/hooks/useIsOverflowing";
+import PeriodTransactionsDialog from "../modals/PeriodTransactionsDialog";
+import PeriodTransactionsList from "./PeriodTransactionsList";
 
-const PER_PAGE = 50;
-const COLUMNS = 5;
+const PREVIEW_COUNT = 10;
 
 interface PeriodTransactionsTableProps {
   year: number;
@@ -23,16 +17,26 @@ interface PeriodTransactionsTableProps {
   periodLabel: string;
 }
 
+/**
+ * On large screens the panel is taken out of the flow so the grid row gets its
+ * height from the sibling card, and the lines that don't fit are clipped.
+ */
 function Panel({ children }: { children: React.ReactNode }) {
   return (
-    <Box
-      borderWidth="1px"
-      borderColor="border.subtle"
-      borderRadius="xl"
-      bg="bg.panel"
-      p={4}
-    >
-      {children}
+    <Box position="relative" h="full" minH={{ lg: "xs" }}>
+      <Box
+        position={{ lg: "absolute" }}
+        inset={{ lg: 0 }}
+        display="flex"
+        flexDirection="column"
+        borderWidth="1px"
+        borderColor="border.subtle"
+        borderRadius="xl"
+        bg="bg.panel"
+        p={4}
+      >
+        {children}
+      </Box>
     </Box>
   );
 }
@@ -61,11 +65,10 @@ export default function PeriodTransactionsTable({
     () => buildCategoryOptions(customCategories ?? []),
     [customCategories],
   );
-  const [visibleCount, setVisibleCount] = React.useState(PER_PAGE);
-  const isMobile = useIsMobile();
+  const [bodyRef, isOverflowing] = useIsOverflowing<HTMLDivElement>();
 
   const header = (
-    <Stack gap={0.5} mb={4}>
+    <Stack gap={0.5} mb={4} flexShrink={0}>
       <Text fontSize="lg" fontWeight="bold">
         Transactions
       </Text>
@@ -88,148 +91,35 @@ export default function PeriodTransactionsTable({
     );
   }
 
-  const visible = transactions?.slice(0, visibleCount) ?? [];
-  const showMoreButton = transactions !== undefined &&
-    transactions.length > visibleCount && (
-      <Button
-        variant="surface"
-        onClick={() => setVisibleCount((count) => count + PER_PAGE)}
-      >
-        Show more ({transactions.length - visibleCount} left)
-      </Button>
-    );
-
-  if (isMobile) {
-    return (
-      <Panel>
-        {header}
-        <Stack gap={3}>
-          {visible.length > 0 && (
-            <Stack
-              as="ul"
-              aria-label="Transactions"
-              gap={0}
-              listStyleType="none"
-            >
-              {visible.map((transaction) => (
-                <TransactionCard
-                  key={transaction._id}
-                  transaction={transaction}
-                  categoryOptions={categoryOptions}
-                  tag={
-                    <Text fontSize="xs" color="fg.muted">
-                      {issuerLabel(transaction.issuer)}
-                    </Text>
-                  }
-                />
-              ))}
-            </Stack>
-          )}
-          {transactions === undefined &&
-            Array.from({ length: 3 }).map((_, index) => (
-              <Skeleton key={index} variant="shine" height="56px" />
-            ))}
-          {transactions?.length === 0 && (
-            <Text textAlign="center" color="fg.muted" py={6}>
-              No transactions in this period.
-            </Text>
-          )}
-          {showMoreButton}
-        </Stack>
-      </Panel>
-    );
-  }
-
   return (
     <Panel>
       {header}
-      <Table.ScrollArea>
-        <Table.Root size="sm" striped>
-          <Table.Header>
-            <Table.Row>
-              <Table.ColumnHeader>Date</Table.ColumnHeader>
-              <Table.ColumnHeader>Description</Table.ColumnHeader>
-              <Table.ColumnHeader>Card</Table.ColumnHeader>
-              <Table.ColumnHeader>Category</Table.ColumnHeader>
-              <Table.ColumnHeader textAlign="end">Amount</Table.ColumnHeader>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {visible.map((transaction) => (
-              <Table.Row key={transaction._id}>
-                <Table.Cell fontSize="xs" color="fg.subtle" whiteSpace="nowrap">
-                  {formatDay(transaction.date)}
-                </Table.Cell>
-                <Table.Cell fontSize="xs">
-                  <Text fontWeight="medium">
-                    {transaction.merchant ?? transaction.description}
-                  </Text>
-                  {transaction.merchant && (
-                    <Text color="fg.muted">{transaction.description}</Text>
-                  )}
-                  {transaction.installmentCurrent !== undefined && (
-                    <Text color="fg.muted">
-                      Installment {transaction.installmentCurrent}/
-                      {transaction.installmentTotal}
-                    </Text>
-                  )}
-                </Table.Cell>
-                <Table.Cell fontSize="xs">
-                  {issuerLabel(transaction.issuer)}
-                </Table.Cell>
-                <Table.Cell fontSize="xs">
-                  <TransactionCategorySelect
-                    transactionId={transaction._id}
-                    category={transaction.category}
-                    description={
-                      transaction.merchant ?? transaction.description
-                    }
-                    options={categoryOptions}
-                  />
-                </Table.Cell>
-                <Table.Cell
-                  fontSize="xs"
-                  textAlign="end"
-                  whiteSpace="nowrap"
-                  color={transaction.amountCents < 0 ? "fg.success" : undefined}
-                >
-                  {formatCents(transaction.amountCents)}
-                </Table.Cell>
-              </Table.Row>
-            ))}
-
-            {transactions === undefined &&
-              Array.from({ length: 3 }).map((_, index) => (
-                <Table.Row key={`skeleton-${index}`}>
-                  {Array.from({ length: COLUMNS }).map((_, cellIndex) => (
-                    <Table.Cell key={cellIndex}>
-                      <Skeleton variant="shine" height="20px" />
-                    </Table.Cell>
-                  ))}
-                </Table.Row>
-              ))}
-
-            {transactions?.length === 0 && (
-              <Table.Row>
-                <Table.Cell
-                  colSpan={COLUMNS}
-                  textAlign="center"
-                  color="fg.muted"
-                  py={6}
-                >
-                  No transactions in this period.
-                </Table.Cell>
-              </Table.Row>
-            )}
-
-            {showMoreButton && (
-              <Table.Row>
-                <Table.Cell colSpan={COLUMNS}>{showMoreButton}</Table.Cell>
-              </Table.Row>
-            )}
-          </Table.Body>
-        </Table.Root>
-      </Table.ScrollArea>
+      <Box
+        ref={bodyRef}
+        flex="1"
+        minH={0}
+        overflow="hidden"
+        maskImage={
+          isOverflowing
+            ? "linear-gradient(to bottom, black calc(100% - 3rem), transparent)"
+            : undefined
+        }
+      >
+        <PeriodTransactionsList
+          transactions={transactions?.slice(0, PREVIEW_COUNT)}
+          categoryOptions={categoryOptions}
+        />
+      </Box>
+      {transactions !== undefined &&
+        (transactions.length > PREVIEW_COUNT || isOverflowing) && (
+          <HStack justify="center" pt={3} flexShrink={0}>
+            <PeriodTransactionsDialog
+              transactions={transactions}
+              categoryOptions={categoryOptions}
+              periodLabel={periodLabel}
+            />
+          </HStack>
+        )}
     </Panel>
   );
 }
